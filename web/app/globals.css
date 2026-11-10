@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@theme inline {
+  --font-sans: var(--font-hanken);
+  --font-mono: var(--font-jetbrains);
+  --default-font-family: var(--font-hanken);
+  --default-mono-font-family: var(--font-jetbrains);
+}
+body { font-family: var(--font-hanken); line-height: 1.6; max-width: 72ch; margin: 2rem auto; padding: 0 1rem; }
+code, pre, kbd, samp, time, .data { font-family: var(--font-jetbrains); }
+h1 { font-size: 2rem; font-weight: 700; }
+h2 { font-size: 1.5rem; font-weight: 700; }
+p, ul, section, nav { margin-block: 1rem; }
+ul { list-style: disc; padding-inline-start: 1.5rem; }
+a { text-decoration: underline; }
+nav a + a { margin-inline-start: 1rem; }

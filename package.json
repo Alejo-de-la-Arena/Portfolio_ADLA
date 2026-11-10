@@ -1,0 +1,17 @@
+{
+  "name": "portfolio-alejo",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @portfolio/web dev",
+    "build": "pnpm --filter @portfolio/web build",
+    "start": "pnpm --filter @portfolio/web start",
+    "lint": "pnpm --filter @portfolio/web lint",
+    "typecheck": "pnpm --filter @portfolio/web typecheck",
+    "test": "pnpm --filter @portfolio/web test",
+    "verify:build": "pnpm --filter @portfolio/web verify:build"
+  }
+}
