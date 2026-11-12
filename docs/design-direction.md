@@ -94,3 +94,17 @@ Ajustes aplicados en /[locale]/preview/b, todavía sin tocar las rutas reales:
 - Contacto en `content/profile.ts`: email con mailto y botón para copiar, más LinkedIn y GitHub, debajo de la disponibilidad y visibles en el primer pantallazo. El preview usa su propia navegación (Inicio, Proyectos, Contacto → #contact) en lugar del header del layout, para no tocar las rutas reales; al pasar B a producción, «Contacto» va al layout.
 - Case study: sin summary (lo reemplaza la banda de cifras); «Resultados destacados» pasa a «En resumen» / «At a glance» solo en el preview.
 - Home: todos los proyectos muestran su summary. La miniatura aparece cuando el proyecto tiene diagrama en `case-visuals.ts`.
+
+## En producción (2026-11-12)
+
+B está en las rutas reales: /[locale], /[locale]/work y /[locale]/work/[slug] para los tres case studies. Los previews se borraron.
+
+- Acentos por proyecto (`accent` en content/case-visuals.ts), siempre con texto negro, aprobados por Alejo:
+  - Solution: cian de su interfaz, #35D3EA (11,66:1 contra negro).
+  - Don Teófilo: roble #CF9A63 (8,46:1), sacado de la madera de sus muebles y aclarado. Su óxido de marca, #8C3B22, da 2,76:1 contra negro y aclarado se confundía con el naranja señal.
+  - FORMAT: su violeta de marca, #9777DA (5,97:1).
+  - Un test exige al menos 4,5:1 contra negro, que cubre el texto sobre el bloque y el trazo en oscuro. Cada miniatura y cada case study usan el acento de su proyecto.
+- El diagrama quedó solo con la disposición vertical; el trazado horizontal de A se eliminó del modelo. La geometría se ensanchó para que los roles y los números de paso midan 13,5 unidades, que se ven a ≥ 13 px reales: medido en el navegador, 13,42 px a 390 y 13,20 px en la miniatura de desktop. Un test comprueba que cada rol entre en su nodo a ese tamaño.
+- Descripción accesible: `describeDiagram` genera, a partir de los mismos datos, «paso n: de X a Y. …» en ES y EN. El SVG la referencia con aria-describedby, también en la miniatura.
+- La fecha de corte de las cifras es `metricsAsOf: "2026-09-14"` (ISODate, guardada una vez) y se formatea con formatDate. Un test verifica que el texto formateado aparezca en el case study.
+- Los case studies sin cifras ni diagrama (Don Teófilo, FORMAT) omiten esos bloques: pasan del campo de color directo a «En resumen».

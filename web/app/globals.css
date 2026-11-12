@@ -5,13 +5,42 @@
   --default-font-family: var(--font-hanken);
   --default-mono-font-family: var(--font-jetbrains);
 }
-body { font-family: var(--font-hanken); line-height: 1.6; max-width: 72ch; margin: 2rem auto; padding: 0 1rem; }
+
+/* Direction B — Cartel (docs/design-direction.md). Pure black and white, one flat field of colour per
+   project (--field, set inline per case study or card), type that fills the width. No greys:
+   hierarchy comes from size, weight and stroke. Light and dark are designed separately. */
+:root {
+  --bg: #FFFFFF; --ink: #000000;
+  /* Site signal orange: links underline and focus. In light it never carries normal text (4.3:1). */
+  --signal: #D9480F;
+  --field: #35D3EA;
+  --gutter: 1rem; --max: 90rem;
+  --body-size: 1.0625rem; --body-leading: 1.6;
+  color-scheme: light dark;
+  scroll-padding-top: 1rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #000000; --ink: #FFFFFF; --signal: #FF6A2B; }
+}
+@media (min-width: 48rem) { :root { --gutter: 2.5rem; } }
+
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-hanken); font-size: var(--body-size); line-height: var(--body-leading);
+}
 code, pre, kbd, samp, time, .data { font-family: var(--font-jetbrains); }
-h1 { font-size: 2rem; font-weight: 700; }
-h2 { font-size: 1.5rem; font-weight: 700; }
-p, ul, section, nav { margin-block: 1rem; }
-ul { list-style: disc; padding-inline-start: 1.5rem; }
-a { text-decoration: underline; }
-nav a + a { margin-inline-start: 1rem; }
-.screenshot { display: block; max-width: 100%; height: auto; margin-block: 1rem; }
-.screenshot.mobile { max-width: min(100%, 22.5rem); }
+a { color: inherit; text-decoration: underline; text-decoration-color: var(--signal); text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+a:focus-visible, button:focus-visible, [tabindex="-1"]:focus-visible { outline: 3px solid var(--signal); outline-offset: 3px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Site header and footer (layout + LanguageSelector) */
+.site-header { padding: 1rem var(--gutter); border-bottom: 2px solid var(--ink); }
+.site-header nav, .site-footer nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; font-weight: 600; font-size: 1.0625rem; }
+.site-header a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+.site-footer { padding: 2rem var(--gutter) 3rem; margin-top: 3rem; border-top: 2px solid var(--ink); }
+.site-footer a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+
+/* Fallback page bodies (not-found inside the layout) */
+.plain-page { padding: 3rem var(--gutter); max-width: 44rem; }
+.plain-page h1 { margin: 0 0 1rem; font-family: var(--font-bricolage); font-weight: 800; font-stretch: 80%; font-size: clamp(2.5rem, 8vw, 5rem); line-height: 0.95; }
+.plain-page p { margin: 0 0 1rem; }

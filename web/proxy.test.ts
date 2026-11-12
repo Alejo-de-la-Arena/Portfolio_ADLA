@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { proxy, config } from "@/proxy";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
-import { contentPaths, previewPaths, workImagePaths } from "@/lib/routes";
+import { contentPaths, workImagePaths } from "@/lib/routes";
 import { projectEntries } from "@/content/projects";
 import { dictionary as d } from "@/content/dictionary";
 import { locales } from "@/content/types";
@@ -17,12 +17,7 @@ describe("proxy", () => {
   it.each([...contentPaths, ...workImagePaths])("deja pasar %s", (path) => {
     expect(proxy(new NextRequest("http://localhost:3000" + path)).headers.get("x-middleware-next")).toBe("1");
   });
-  it.each(previewPaths)("deja pasar el preview %s con noindex", (path) => {
-    const response = proxy(new NextRequest("http://localhost:3000" + path));
-    expect(response.headers.get("x-middleware-next")).toBe("1");
-    expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
-  });
-  it.each(["/es/preview", "/es/preview/c", "/en/preview/a/extra"])("404 para preview inexistente %s", (path) => {
+  it.each(["/es/preview/a", "/en/preview/b", "/es/preview"])("los previews retirados responden 404: %s", (path) => {
     expect(proxy(new NextRequest("http://localhost:3000" + path)).status).toBe(404);
   });
   it.each(projectEntries)("no crea detalle para $slug", entry => {

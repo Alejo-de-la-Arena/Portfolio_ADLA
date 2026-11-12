@@ -126,12 +126,12 @@ Copia la aplicación a una carpeta temporal sin proxy.ts, enlaza las dependencia
 
 Comprobación 2026-11-10: el canario fue ejecutado explícitamente y reprodujo el 404 con html id="__next_error__" sin lang ni texto visible. Se conserva el workaround. La suite normal mantiene el canario salteado.
 
-## Previews de dirección visual (2026-11-12)
+## Dirección B en las rutas reales (2026-11-12)
 
-Son maquetas en la obra: se recorren, pero no figuran en el plano público. Ver docs/design-direction.md.
+Los previews /[locale]/preview/a y /preview/b se retiraron: sus rutas, estilos, la fuente Archivo, las entradas de Proxy y los chequeos de verify-build. Ahora responden 404 como cualquier ruta desconocida, y verify-build lo comprueba. Esta migración no agregó decisiones de Next.js; usa las ya documentadas:
 
-- Rutas: /[locale]/preview/a y /[locale]/preview/b. `previewPaths` vive en lib/routes.ts separado de `contentPaths`. Proxy los deja pasar con `X-Robots-Tag: noindex, nofollow`. routes.test acepta ambos inventarios, y verify-build exige estático, 200, noindex y ausencia de canonical/hreflang.
-- noindex por Metadata API (`robots: { index: false, follow: false }`), sin `alternates`: no se anuncian como traducciones indexables.
-- Client Component solo para el diagrama (components/system-diagram.tsx): necesita estado, requestAnimationFrame, IntersectionObserver y matchMedia. El servidor lo prerenderiza en estado «todo el sistema», que es también lo que ven quienes no tienen JavaScript o tienen prefers-reduced-motion. Las páginas siguen siendo Server Components y ensureStatic no cambia.
-- CSS Modules por preview (a.module.css, b.module.css) para no filtrar estilos al sitio actual. `body:has(.root)` anula el ancho de body de globals.css solo en esas páginas; es un selector puro porque incluye una clase local. Orden de CSS verificado en build. Fuente local: 01-app/01-getting-started/11-css.md.
-- Fuentes display con next/font/local desde web/assets/fonts (Archivo y Bricolage Grotesque, variables, OFL incluidas). Quedan fuera de public/ porque next/font las publica en /_next/static/media; así el matcher de Proxy no cambia y no hay archivos públicos que respondan 404. `declarations` declara el rango de font-stretch del eje de ancho.
+- Server Components para home, listado y case study. Las páginas siguen prerenderizadas y estáticas (verify-build: compute static y response complete).
+- Un solo Client Component para el diagrama (components/system-diagram.tsx), que necesita estado, requestAnimationFrame, IntersectionObserver y matchMedia. El servidor lo prerenderiza en «todo el sistema», que es también lo que se ve sin JavaScript o con prefers-reduced-motion. El recorrido es un reducer puro (components/walkthrough.ts, con tests): si reduced motion se activa en pleno recorrido, un listener de matchMedia despacha `reducedMotion` y vuelve a la vista completa. Otro Client Component es el botón para copiar el email.
+- CSS Modules por ruta (home.module.css, work.module.css, case.module.css) y globals.css con los tokens de B. El tema de cada proyecto es la variable `--field`, que se asigna inline por case study y por fila del índice.
+- next/font/local para Bricolage Grotesque desde web/assets/fonts (fuera de public/, servida en /_next/static/media; el matcher de Proxy no cambia). `declarations` declara el rango de font-stretch.
+- La navegación general (layout) agrega «Contacto», que apunta a /[locale]#contact, en la home.

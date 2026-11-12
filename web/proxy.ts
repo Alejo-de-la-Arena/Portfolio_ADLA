@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { preferredLocale, isLocale } from "@/lib/locale";
-import { contentPaths, previewPaths, workImagePaths } from "@/lib/routes";
+import { contentPaths, workImagePaths } from "@/lib/routes";
 import { notFoundDocuments } from "@/lib/not-found-document";
 export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
@@ -15,11 +15,6 @@ export function proxy(request: NextRequest) {
   const locale = url.pathname.split("/")[1];
   if (isLocale(locale)) {
     if (contentPaths.includes(url.pathname)) return NextResponse.next();
-    if (previewPaths.includes(url.pathname)) {
-      const response = NextResponse.next();
-      response.headers.set("X-Robots-Tag", "noindex, nofollow");
-      return response;
-    }
     // Workaround vercel/next.js#100596: notFound() en segmentos dinámicos devuelve un body vacío (sin lang ni texto). Quitar cuando Next lo corrija; ver docs/decisiones-next.md.
     return new NextResponse(notFoundDocuments[locale], {
       status: 404, headers: { "Content-Type": "text/html; charset=utf-8", "X-Robots-Tag": "noindex" },

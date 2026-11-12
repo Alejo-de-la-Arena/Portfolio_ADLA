@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { contentSuffixes, contentPaths, previewPaths, workImagePaths } from "../lib/routes.ts";
+import { contentSuffixes, contentPaths, workImagePaths } from "../lib/routes.ts";
 import { caseStudies } from "../content/case-studies.ts";
 import { projectEntries } from "../content/projects.ts";
 import { locales } from "../content/types.ts";
@@ -45,17 +45,6 @@ for (const locale of locales) {
     console.log("STATIC + 200 + lang + canonical + hreflang + OG: " + path);
   }
 }
-for (const path of previewPaths) {
-  assert.ok(manifest.routes[path], "Missing static preview: " + path);
-  assert.equal(manifest.routes[path].compute, "static", "Dynamic compute: " + path); assert.equal(manifest.routes[path].response, "complete", "Incomplete prerender: " + path);
-  const response = await fetch(base + path);
-  assert.equal(response.status, 200, path);
-  assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/, "X-Robots-Tag: " + path);
-  const html = await response.text();
-  assert.ok(tags(html, "meta").some((tag) => tag.name === "robots" && tag.content.includes("noindex")), "robots noindex: " + path);
-  assert.ok(!tags(html, "link").some((link) => link.rel === "canonical" || link.rel === "alternate"), "Preview must not declare canonical/hreflang: " + path);
-  console.log("STATIC + 200 + noindex + no canonical: " + path);
-}
 for (const [language, target] of [["en-US", "/en"], ["es-AR", "/es"], ["es;q=0.2,en;q=0.9", "/en"], ["fr", "/es"]]) {
   const response = await fetch(base + "/?source=check", { headers: { "Accept-Language": language }, redirect: "manual" });
   assert.equal(response.status, 307);
@@ -66,7 +55,7 @@ for (const [path, locale] of [
   ...locales.flatMap((locale) => [["/" + locale + "/missing/deep", locale], ["/" + locale + "/work/missing", locale], ["/" + locale + "/404", locale]]),
   ...locales.flatMap(locale => projectEntries.map(entry => ["/" + locale + "/work/" + entry.slug, locale])),
   ["/work/format/missing.png", "es"],
-  ["/fr", "es"], ["/missing/deep", "es"], ["/fonts/no-existe.woff2", "es"], ["/es/no-existe", "es"],
+  ["/fr", "es"], ["/missing/deep", "es"], ["/fonts/no-existe.woff2", "es"], ["/es/no-existe", "es"], ["/es/preview/b", "es"], ["/en/preview/a", "en"],
 ]) {
   const response = await fetch(base + path);
   assert.equal(response.status, 404, path);
