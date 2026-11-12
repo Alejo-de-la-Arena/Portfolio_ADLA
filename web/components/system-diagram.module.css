@@ -1,0 +1,111 @@
+/* Themed entirely through custom properties set by each preview:
+   --dg-ink, --dg-muted, --dg-rule, --dg-surface, --dg-accent, --dg-on-accent,
+   --dg-stroke, --dg-name-font, --dg-grid, --dg-focus. */
+.root {
+  container-type: inline-size;
+  margin: 0;
+  color: var(--dg-ink);
+}
+.layout { display: grid; gap: 1.5rem; }
+.canvas { min-width: 0; }
+.stillCaption { font: 0.8125rem/1.4 var(--font-jetbrains); color: var(--dg-muted); }
+
+.svg { display: block; width: 100%; height: auto; overflow: visible; }
+.svg text { font-family: var(--font-jetbrains); }
+.wide { display: none; }
+.tall { max-width: 26rem; margin-inline: auto; }
+.root[data-layouts="responsive"] .tall { display: block; }
+@container (min-width: 46rem) {
+  .root[data-layouts="responsive"] .wide { display: block; }
+  .root[data-layouts="responsive"] .tall { display: none; }
+}
+
+.gridDot { fill: var(--dg-grid); }
+
+/* Every state reads custom properties with the original values as fallbacks, so each direction can
+   design its own light and dark treatment instead of inverting one. */
+.edge polyline {
+  fill: none; stroke: var(--dg-idle, var(--dg-rule)); stroke-width: var(--dg-idle-width, var(--dg-stroke, 1.5));
+  stroke-linejoin: round; transition: stroke 200ms, stroke-width 200ms;
+}
+.edge polygon { fill: var(--dg-idle, var(--dg-rule)); transition: fill 200ms; }
+.edge[data-style="dashed"] polyline { stroke-dasharray: 6 5; }
+.edge[data-state="all"] polyline, .edge[data-state="done"] polyline { stroke: var(--dg-ink); stroke-width: var(--dg-done-width, var(--dg-stroke, 1.5)); }
+.edge[data-state="all"] polygon, .edge[data-state="done"] polygon { fill: var(--dg-ink); }
+.edge[data-state="active"] polyline { stroke: var(--dg-active, var(--dg-accent)); stroke-width: var(--dg-active-width, calc(var(--dg-stroke, 1.5) * 1.8)); }
+.edge[data-state="active"] polygon { fill: var(--dg-active, var(--dg-accent)); }
+
+.node rect { fill: var(--dg-surface); stroke: var(--dg-ink); stroke-width: var(--dg-done-width, var(--dg-stroke, 1.5)); transition: stroke 200ms, fill 200ms; }
+.node[data-state="idle"] rect { stroke: var(--dg-idle, var(--dg-rule)); stroke-width: var(--dg-idle-width, var(--dg-stroke, 1.5)); }
+.node[data-state="active"] rect {
+  fill: var(--dg-node-active-fill, var(--dg-surface)); stroke: var(--dg-node-active-stroke, var(--dg-accent));
+  stroke-width: var(--dg-active-width, calc(var(--dg-stroke, 1.5) * 1.8));
+}
+.svg .nodeName { font-family: var(--dg-name-font, var(--font-hanken)); font-weight: 650; fill: var(--dg-ink); }
+.svg .nodeRole { fill: var(--dg-role, var(--dg-muted)); }
+.node[data-state="active"] .nodeName, .node[data-state="active"] .nodeRole { fill: var(--dg-node-active-text, var(--dg-ink)); }
+
+.badge circle { fill: var(--dg-surface); stroke: var(--dg-ink); stroke-width: var(--dg-badge-width, 1.25); }
+.badge text { fill: var(--dg-ink); text-anchor: middle; font-weight: 600; }
+.badge[data-state="idle"] circle { stroke: var(--dg-idle, var(--dg-rule)); }
+.badge[data-state="idle"] text { fill: var(--dg-idle-text, var(--dg-muted)); }
+.badge[data-state="active"] circle { fill: var(--dg-badge-active, var(--dg-accent)); stroke: var(--dg-badge-active, var(--dg-accent)); }
+.badge[data-state="active"] text { fill: var(--dg-on-accent); }
+
+.packet { fill: var(--dg-packet, var(--dg-accent)); stroke: var(--dg-packet-ring, var(--dg-surface)); stroke-width: 2; }
+
+/* Thumbnail: the drawing plus one line saying what is moving. */
+.thumbnail .tall { max-width: none; margin: 0; }
+.thumbCaption { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); gap: 0.75rem; align-items: center; margin-top: 0.75rem; }
+.thumbStep {
+  margin: 0; display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: 0.25rem; align-items: baseline;
+  font-size: var(--dg-step-size, 0.9375rem); line-height: var(--dg-step-leading, 1.45); min-height: 3.2em;
+}
+
+.panel { display: grid; gap: 1rem; min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.control, .overview {
+  min-height: 2.75rem; border: 1px solid var(--dg-ink); background: var(--dg-surface); color: var(--dg-ink);
+  font: 500 0.875rem/1 var(--font-jetbrains); cursor: pointer;
+}
+.control { width: 2.75rem; display: grid; place-items: center; }
+.control svg { width: 1rem; height: 1rem; fill: currentColor; }
+.overview { padding-inline: 0.875rem; }
+.overview[aria-pressed="true"] { background: var(--dg-ink); color: var(--dg-surface); }
+.control:hover, .overview:hover { border-color: var(--dg-accent); }
+.control:focus-visible, .overview:focus-visible, .steps button:focus-visible {
+  outline: 3px solid var(--dg-focus); outline-offset: 2px;
+}
+.status { margin: 0 0 0 auto; font: 0.8125rem/1.4 var(--font-jetbrains); color: var(--dg-muted); font-variant-numeric: tabular-nums; }
+
+.stepsHeading {
+  margin: 0; font: 600 0.8125rem/1.4 var(--font-jetbrains); color: var(--dg-muted);
+}
+.steps { list-style: none; margin: 0; padding: 0; display: grid; }
+.steps li { border-top: 1px solid var(--dg-rule); }
+.steps li:last-child { border-bottom: 1px solid var(--dg-rule); }
+.steps button {
+  all: unset; box-sizing: border-box; width: 100%; cursor: pointer;
+  display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 0.75rem; align-items: baseline;
+  padding: 0.625rem 0.25rem; color: var(--dg-muted);
+}
+.steps li[data-state="all"] button, .steps li[data-state="done"] button { color: var(--dg-ink); }
+.steps li[data-state="idle"] button { color: var(--dg-idle-text, var(--dg-muted)); }
+.steps li[data-state="active"] button {
+  color: var(--dg-step-active-text, var(--dg-ink)); background: var(--dg-step-active-bg, transparent);
+  box-shadow: inset var(--dg-marker-width, 3px) 0 0 var(--dg-marker, var(--dg-accent)); padding-inline-start: 0.75rem; font-weight: var(--dg-active-weight, 400);
+}
+.stepNumber { font: 600 0.8125rem/1 var(--font-jetbrains); font-variant-numeric: tabular-nums; }
+.steps li[data-state="active"] .stepNumber { color: var(--dg-accent-text, var(--dg-accent)); }
+.stepText { font-size: var(--dg-step-size, 0.9375rem); line-height: var(--dg-step-leading, 1.45); }
+.stepText code { font-size: 0.875em; overflow-wrap: anywhere; }
+
+@container (min-width: 60rem) {
+  .root[data-list="beside"] .layout { grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); gap: 4rem; align-items: start; }
+  .root[data-list="beside"] .tall { margin-inline: 0; }
+  .root[data-list="beside"] .panel { position: sticky; top: 1.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge polyline, .edge polygon, .node rect { transition: none; }
+}

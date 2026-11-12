@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { contentSuffixes, contentPaths } from "../lib/routes.ts";
+import { contentSuffixes, contentPaths, previewPaths, workImagePaths } from "../lib/routes.ts";
+import { caseStudies } from "../content/case-studies.ts";
+import { projectEntries } from "../content/projects.ts";
 import { locales } from "../content/types.ts";
 import { dictionary as d } from "../content/dictionary.ts";
 
@@ -35,9 +37,24 @@ for (const locale of locales) {
     if (suffix.startsWith("/work/")) {
       assert.match(html, /<h2[ >]/); assert.match(html, /<ul[ >]/);
       assert.match(html, /<strong[ >]/); assert.match(html, /<time /);
+      const study = caseStudies.find(study => suffix === "/work/" + study.slug);
+      for (const image of [study.cover, ...study.gallery]) {
+        assert.ok(tags(html, "img").some(tag => tag.alt === image.alt[locale] && Number(tag.width) === image.width && Number(tag.height) === image.height), "Rendered image: " + image.src);
+      }
     }
     console.log("STATIC + 200 + lang + canonical + hreflang + OG: " + path);
   }
+}
+for (const path of previewPaths) {
+  assert.ok(manifest.routes[path], "Missing static preview: " + path);
+  assert.equal(manifest.routes[path].compute, "static", "Dynamic compute: " + path); assert.equal(manifest.routes[path].response, "complete", "Incomplete prerender: " + path);
+  const response = await fetch(base + path);
+  assert.equal(response.status, 200, path);
+  assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/, "X-Robots-Tag: " + path);
+  const html = await response.text();
+  assert.ok(tags(html, "meta").some((tag) => tag.name === "robots" && tag.content.includes("noindex")), "robots noindex: " + path);
+  assert.ok(!tags(html, "link").some((link) => link.rel === "canonical" || link.rel === "alternate"), "Preview must not declare canonical/hreflang: " + path);
+  console.log("STATIC + 200 + noindex + no canonical: " + path);
 }
 for (const [language, target] of [["en-US", "/en"], ["es-AR", "/es"], ["es;q=0.2,en;q=0.9", "/en"], ["fr", "/es"]]) {
   const response = await fetch(base + "/?source=check", { headers: { "Accept-Language": language }, redirect: "manual" });
@@ -47,6 +64,8 @@ for (const [language, target] of [["en-US", "/en"], ["es-AR", "/es"], ["es;q=0.2
 }
 for (const [path, locale] of [
   ...locales.flatMap((locale) => [["/" + locale + "/missing/deep", locale], ["/" + locale + "/work/missing", locale], ["/" + locale + "/404", locale]]),
+  ...locales.flatMap(locale => projectEntries.map(entry => ["/" + locale + "/work/" + entry.slug, locale])),
+  ["/work/format/missing.png", "es"],
   ["/fr", "es"], ["/missing/deep", "es"], ["/fonts/no-existe.woff2", "es"], ["/es/no-existe", "es"],
 ]) {
   const response = await fetch(base + path);
@@ -63,5 +82,14 @@ for (const [path, type] of [["/favicon.ico", "image/"], ["/icon.svg", "image/svg
   assert.ok(response.headers.get("content-type")?.startsWith(type), path);
   assert.ok((await response.arrayBuffer()).byteLength > 0, path);
   console.log("200 + image + nonempty: " + path);
+}
+for (const path of workImagePaths) {
+  for (const imagePath of [path, "/_next/image?url=" + encodeURIComponent(path) + "&w=640&q=75"]) {
+    const response = await fetch(base + imagePath);
+    assert.equal(response.status, 200, imagePath);
+    assert.ok(response.headers.get("content-type")?.startsWith("image/"), imagePath);
+    assert.ok((await response.arrayBuffer()).byteLength > 0, imagePath);
+  }
+  console.log("200 + original + next/image: " + path);
 }
 console.log("Build verification passed.");

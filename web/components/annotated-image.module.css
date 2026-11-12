@@ -1,0 +1,73 @@
+/* Themed through --an-ink, --an-muted, --an-rule, --an-surface, --an-accent, --an-on-accent, and optionally
+   --an-leader (line colour), --an-halo (casing that keeps the line visible over any screenshot),
+   --an-legend-size. */
+.root {
+  --rail-row: 2.125rem;
+  --crail: 3rem;
+  --leader: var(--an-leader, var(--an-accent));
+  --halo: var(--an-halo, transparent);
+  container-type: inline-size;
+  margin: 0;
+}
+.frame { position: relative; margin-top: calc(var(--rows) * var(--rail-row) + 0.75rem); }
+.image { display: block; width: 100%; height: auto; outline: var(--an-outline, 1px) solid var(--an-rule); }
+
+.callout { position: absolute; left: var(--x); top: 0; height: var(--y); width: 0; }
+.leader {
+  position: absolute; left: -0.75px; width: 1.5px; bottom: 0; background: var(--leader);
+  box-shadow: 0 0 0 1px var(--halo);
+  top: calc(-1 * (var(--row) * var(--rail-row) + 0.75rem));
+}
+.dot {
+  position: absolute; left: -5px; bottom: -5px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--an-accent); box-shadow: 0 0 0 1.5px var(--leader), 0 0 0 3px var(--halo);
+}
+.label {
+  position: absolute; white-space: nowrap;
+  top: calc(-1 * ((var(--row) + 1) * var(--rail-row) + 0.75rem));
+  height: var(--rail-row); display: flex; align-items: flex-end;
+  padding: 0 0.125rem 0.3rem; border-bottom: 1.5px solid var(--leader);
+  font: 500 0.875rem/1.2 var(--font-jetbrains); color: var(--an-ink);
+}
+.callout[data-align="start"] .label { left: 0; }
+.callout[data-align="center"] .label { left: 0; transform: translateX(-50%); }
+.callout[data-align="end"] .label { right: -0.75px; }
+.inLeader, .compactRail { display: none; }
+
+.legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.legendHeading { display: block; font: 600 0.875rem/1.4 var(--font-jetbrains); color: var(--an-muted); margin-bottom: 0.5rem; }
+.legend ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.legend li {
+  display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); gap: 0.625rem; align-items: baseline;
+  font-size: var(--an-legend-size, 1.0625rem); line-height: 1.6;
+}
+.legendKey {
+  display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  background: var(--an-accent); color: var(--an-on-accent); box-shadow: 0 0 0 1.5px var(--leader);
+  font: 700 0.8125rem/1 var(--font-jetbrains); transform: translateY(0.2em);
+}
+
+/* Compact: lettered markers spread along a rail above the image, each tied to its anchor by a
+   leader; the legend below carries the text at reading size. Used whenever rail labels would not
+   fit legibly (phones, narrow columns). */
+.compactRail { position: absolute; left: 0; right: 0; top: calc(-1 * var(--crail)); height: var(--crail); }
+.compactLines { position: absolute; left: 0; top: 1.75rem; width: 100%; height: calc(var(--crail) - 1.75rem); overflow: visible; }
+.compactLines line { stroke: var(--leader); stroke-width: 1.5; }
+.marker {
+  position: absolute; top: 0; transform: translateX(-50%); display: grid; place-items: center;
+  width: 1.75rem; height: 1.75rem; border-radius: 50%; background: var(--an-accent); color: var(--an-on-accent);
+  box-shadow: 0 0 0 1.5px var(--leader); font: 700 0.875rem/1 var(--font-jetbrains);
+}
+.inLeader { position: absolute; left: -0.75px; width: 1.5px; top: 0; bottom: 0; background: var(--leader); box-shadow: 0 0 0 1px var(--halo); }
+@container (max-width: 50rem) {
+  .root[data-variant="desktop"] .frame { margin-top: var(--crail); }
+  .root[data-variant="desktop"] .leader, .root[data-variant="desktop"] .label { display: none; }
+  .root[data-variant="desktop"] .inLeader, .root[data-variant="desktop"] .compactRail { display: block; }
+  .root[data-variant="desktop"] .legend { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; margin-top: 1.25rem; }
+}
+@container (max-width: 22.99rem) {
+  .root[data-variant="mobile"] .frame { margin-top: var(--crail); }
+  .root[data-variant="mobile"] .leader, .root[data-variant="mobile"] .label { display: none; }
+  .root[data-variant="mobile"] .inLeader, .root[data-variant="mobile"] .compactRail { display: block; }
+  .root[data-variant="mobile"] .legend { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; margin-top: 1.25rem; }
+}

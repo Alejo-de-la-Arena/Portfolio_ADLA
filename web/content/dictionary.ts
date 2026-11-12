@@ -4,7 +4,16 @@ export const dictionary = {
   description: { es: "Portfolio full-stack en construcción.", en: "Full-stack portfolio under construction." },
   home: { es: "Inicio", en: "Home" },
   work: { es: "Proyectos", en: "Work" },
-  placeholder: { es: "Próximamente: contenido del portfolio.", en: "Coming soon: portfolio content." },
+  caseStudies: { es: "Casos de estudio", en: "Case studies" },
+  featured: { es: "Proyectos destacados", en: "Featured work" },
+  otherWork: { es: "Otros trabajos", en: "Other work" },
+  gallery: { es: "Capturas", en: "Screenshots" },
+  client: { es: "Cliente", en: "Client" },
+  visitSite: { es: "Visitar sitio", en: "Visit website" },
+  live: { es: "Publicado", en: "Live" },
+  archived: { es: "Archivado", en: "Archived" },
+  ongoing: { es: "En curso", en: "Ongoing" },
+  placeholder: { es: "Portfolio en construcción. Proyectos destacados:", en: "Portfolio under construction. Featured work:" },
   navigation: { es: "Navegación principal", en: "Main navigation" },
   languages: { es: "Idiomas", en: "Languages" },
   present: { es: "Actualidad", en: "Present" },
@@ -21,3 +30,30 @@ export const dictionary = {
 } satisfies Record<string, Text>;
 
 export const formatting = { leadSeparator: { es: " ", en: " " } } satisfies Record<string, Text>;
+
+/** Interface text for system diagrams, metrics and annotated screenshots. */
+export const visualUi = {
+  play: { es: "Reproducir recorrido", en: "Play walkthrough" },
+  pause: { es: "Pausar recorrido", en: "Pause walkthrough" },
+  previous: { es: "Paso anterior", en: "Previous step" },
+  next: { es: "Paso siguiente", en: "Next step" },
+  showAll: { es: "Ver todo el sistema", en: "Show the whole system" },
+  stepsHeading: { es: "Recorrido", en: "Walkthrough" },
+  stepOf: { es: "Paso {n} de {total}", en: "Step {n} of {total}" },
+  allSteps: { es: "Todos los pasos", en: "All steps" },
+  metricsHeading: { es: "En números", en: "By the numbers" },
+  annotationsHeading: { es: "Qué señala la captura", en: "What the screenshot shows" },
+  document: { es: "Documento", en: "Document" },
+  role: { es: "Rol", en: "Role" },
+  period: { es: "Período", en: "Period" },
+  status: { es: "Estado", en: "Status" },
+  readCase: { es: "Leer el caso", en: "Read the case study" },
+  approximately: { es: "aproximadamente", en: "approximately" },
+  to: { es: "a", en: "to" },
+  previewNotice: { es: "Vista previa de diseño, no indexada.", en: "Design preview, not indexed." },
+  contact: { es: "Contacto", en: "Contact" },
+  copyEmail: { es: "Copiar email", en: "Copy email" },
+  emailCopied: { es: "Email copiado", en: "Email copied" },
+  copyFailed: { es: "No se pudo copiar. Seleccioná el email para copiarlo.", en: "Couldn’t copy. Select the email to copy it." },
+  atAGlance: { es: "En resumen", en: "At a glance" },
+} satisfies Record<string, Text>;

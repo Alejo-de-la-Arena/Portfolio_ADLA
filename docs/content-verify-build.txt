@@ -1,0 +1,56 @@
+$ pnpm --filter @portfolio/web verify:build
+$ node --experimental-strip-types scripts/verify-build.mjs
+STATIC + 200 + lang + canonical + hreflang + OG: /es
+STATIC + 200 + lang + canonical + hreflang + OG: /es/work
+STATIC + 200 + lang + canonical + hreflang + OG: /es/work/solution
+STATIC + 200 + lang + canonical + hreflang + OG: /es/work/don-teofilo-amoblamientos
+STATIC + 200 + lang + canonical + hreflang + OG: /es/work/format
+STATIC + 200 + lang + canonical + hreflang + OG: /en
+STATIC + 200 + lang + canonical + hreflang + OG: /en/work
+STATIC + 200 + lang + canonical + hreflang + OG: /en/work/solution
+STATIC + 200 + lang + canonical + hreflang + OG: /en/work/don-teofilo-amoblamientos
+STATIC + 200 + lang + canonical + hreflang + OG: /en/work/format
+404 + lang + translation + noindex: /es/missing/deep
+404 + lang + translation + noindex: /es/work/missing
+404 + lang + translation + noindex: /es/404
+404 + lang + translation + noindex: /en/missing/deep
+404 + lang + translation + noindex: /en/work/missing
+404 + lang + translation + noindex: /en/404
+404 + lang + translation + noindex: /es/work/manantial
+404 + lang + translation + noindex: /es/work/yacoub
+404 + lang + translation + noindex: /es/work/madero-walk
+404 + lang + translation + noindex: /es/work/exagon-impact
+404 + lang + translation + noindex: /es/work/aeroclub
+404 + lang + translation + noindex: /es/work/zetenta-site
+404 + lang + translation + noindex: /es/work/go-building
+404 + lang + translation + noindex: /es/work/espacio-boa
+404 + lang + translation + noindex: /es/work/renova-tu-cocina
+404 + lang + translation + noindex: /es/work/mdvproyectos
+404 + lang + translation + noindex: /es/work/fefe-bakes
+404 + lang + translation + noindex: /es/work/kyriazis
+404 + lang + translation + noindex: /en/work/manantial
+404 + lang + translation + noindex: /en/work/yacoub
+404 + lang + translation + noindex: /en/work/madero-walk
+404 + lang + translation + noindex: /en/work/exagon-impact
+404 + lang + translation + noindex: /en/work/aeroclub
+404 + lang + translation + noindex: /en/work/zetenta-site
+404 + lang + translation + noindex: /en/work/go-building
+404 + lang + translation + noindex: /en/work/espacio-boa
+404 + lang + translation + noindex: /en/work/renova-tu-cocina
+404 + lang + translation + noindex: /en/work/mdvproyectos
+404 + lang + translation + noindex: /en/work/fefe-bakes
+404 + lang + translation + noindex: /en/work/kyriazis
+404 + lang + translation + noindex: /work/format/missing.png
+404 + lang + translation + noindex: /fr
+404 + lang + translation + noindex: /missing/deep
+404 + lang + translation + noindex: /fonts/no-existe.woff2
+404 + lang + translation + noindex: /es/no-existe
+200 + image + nonempty: /favicon.ico
+200 + image + nonempty: /icon.svg
+200 + original + next/image: /work/solution/solution-home.webp
+200 + original + next/image: /work/solution/solution-home-mobile.webp
+200 + original + next/image: /work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home.png
+200 + original + next/image: /work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home-mobile.png
+200 + original + next/image: /work/format/format-home-hero.png
+200 + original + next/image: /work/format/format-home-hero-mobile.png
+Build verification passed.

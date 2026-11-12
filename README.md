@@ -37,11 +37,13 @@ Sin SITE_URL se usa http://localhost:3000; establecer el dominio real antes de p
 
 ## Contenido
 
-Editar web/content/case-studies.ts y dictionary.ts. El alias @/ apunta a web/.
+Editar web/content/case-studies.ts, projects.ts y dictionary.ts. El alias @/ apunta a web/.
 Cada proyecto tiene un slug técnico compartido, fechas ISO (YYYY-MM o YYYY-MM-DD), stack e href sin duplicación. Texto visible traducible requiere es/en.
 ISODate y los tests validan fechas; Intl.DateTimeFormat las presenta por idioma en UTC.
 Un mes se compara como su día 1, pero se muestra sin día. end: null significa proyecto en curso.
-Los bloques admiten párrafos y bullets, con lead opcional en strong.
+Los bloques admiten párrafos y bullets con segmentos tipados de texto, código inline y enlaces, con lead opcional en strong. Cada case study tiene estado, orden, destacado, resumen y capturas locales en public/work/<slug>/ con alt ES/EN y dimensiones explícitas, servidas con next/image.
+Las entradas compactas no tienen detalle propio; las de Zetenta se agrupan por employer. Un período ausente o un final omitido representan datos desconocidos; end: null se reserva para trabajo en curso.
+Ver [procedencia y datos faltantes](docs/content-migration.md).
 
 Se generan home, listado y cada proyecto en ambos idiomas, más el 404 global. Los 404 localizados son documentos estáticos servidos directamente por Proxy para evitar un bug confirmado de Next 16.4.5 (ver decisiones).
 Cache Components y ensureStatic="navigation" garantizan el renderizado estático. Proxy negocia / y responde a URLs desconocidas con 404 traducidos.

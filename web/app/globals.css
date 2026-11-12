@@ -13,3 +13,5 @@ p, ul, section, nav { margin-block: 1rem; }
 ul { list-style: disc; padding-inline-start: 1.5rem; }
 a { text-decoration: underline; }
 nav a + a { margin-inline-start: 1rem; }
+.screenshot { display: block; max-width: 100%; height: auto; margin-block: 1rem; }
+.screenshot.mobile { max-width: min(100%, 22.5rem); }

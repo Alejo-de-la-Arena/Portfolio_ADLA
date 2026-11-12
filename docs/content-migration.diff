@@ -1,0 +1,2111 @@
+diff --git a/README.md b/README.md
+index b8e0487..c351f44 100644
+--- a/README.md
++++ b/README.md
+@@ -37,11 +37,13 @@ Sin SITE_URL se usa http://localhost:3000; establecer el dominio real antes de p
+ 
+ ## Contenido
+ 
+-Editar web/content/case-studies.ts y dictionary.ts. El alias @/ apunta a web/.
++Editar web/content/case-studies.ts, projects.ts y dictionary.ts. El alias @/ apunta a web/.
+ Cada proyecto tiene un slug técnico compartido, fechas ISO (YYYY-MM o YYYY-MM-DD), stack e href sin duplicación. Texto visible traducible requiere es/en.
+ ISODate y los tests validan fechas; Intl.DateTimeFormat las presenta por idioma en UTC.
+ Un mes se compara como su día 1, pero se muestra sin día. end: null significa proyecto en curso.
+-Los bloques admiten párrafos y bullets, con lead opcional en strong.
++Los bloques admiten párrafos y bullets con segmentos tipados de texto, código inline y enlaces, con lead opcional en strong. Cada case study tiene estado, orden, destacado, resumen y capturas locales en public/work/<slug>/ con alt ES/EN y dimensiones explícitas, servidas con next/image.
++Las entradas compactas no tienen detalle propio; las de Zetenta se agrupan por employer. Un período ausente o un final omitido representan datos desconocidos; end: null se reserva para trabajo en curso.
++Ver [procedencia y datos faltantes](docs/content-migration.md).
+ 
+ Se generan home, listado y cada proyecto en ambos idiomas, más el 404 global. Los 404 localizados son documentos estáticos servidos directamente por Proxy para evitar un bug confirmado de Next 16.4.5 (ver decisiones).
+ Cache Components y ensureStatic="navigation" garantizan el renderizado estático. Proxy negocia / y responde a URLs desconocidas con 404 traducidos.
+diff --git a/web/app/[locale]/page.tsx b/web/app/[locale]/page.tsx
+index da8062a..b95f4eb 100644
+--- a/web/app/[locale]/page.tsx
++++ b/web/app/[locale]/page.tsx
+@@ -2,11 +2,15 @@ import { dictionary as d } from "@/content/dictionary";
+ import { requireLocale } from "@/lib/routing";
+ import { pageMetadata } from "@/lib/metadata";
+ import { LanguageSelector } from "@/components/language-selector";
++import { CaseStudyList } from "@/components/case-study-list";
++import { caseStudies } from "@/content/case-studies";
+ export async function generateMetadata({ params }: PageProps<"/[locale]">) {
+   const locale = requireLocale((await params).locale);
+   return pageMetadata(locale, "", d.siteTitle[locale], d.description[locale]);
+ }
+ export default async function Home({ params }: PageProps<"/[locale]">) {
+   const locale = requireLocale((await params).locale);
+-  return <><h1>{d.siteTitle[locale]}</h1><p>{d.placeholder[locale]}</p><LanguageSelector locale={locale} /></>;
++  return <><h1>{d.siteTitle[locale]}</h1><p>{d.placeholder[locale]}</p>
++    <section><h2>{d.featured[locale]}</h2><CaseStudyList studies={caseStudies.filter(study => study.featured)} locale={locale} /></section>
++    <LanguageSelector locale={locale} /></>;
+ }
+diff --git a/web/app/[locale]/work/[slug]/page.tsx b/web/app/[locale]/work/[slug]/page.tsx
+index 4940f41..92bb673 100644
+--- a/web/app/[locale]/work/[slug]/page.tsx
++++ b/web/app/[locale]/work/[slug]/page.tsx
+@@ -4,8 +4,9 @@ import { formatDate } from "@/lib/dates";
+ import { pageMetadata } from "@/lib/metadata";
+ import { notFound } from "next/navigation";
+ import { caseStudies, findCaseStudy } from "@/content/case-studies";
+-import { dictionary as d, formatting } from "@/content/dictionary";
+-import type { Locale, RichText } from "@/content/types";
++import { dictionary as d } from "@/content/dictionary";
++import { TextContent } from "@/components/rich-text";
++import { WorkImage } from "@/components/work-image";
+ import { requireLocale } from "@/lib/routing";
+ 
+ export function generateStaticParams() {
+@@ -20,26 +21,26 @@ async function resolveStudy(params: PageProps<"/[locale]/work/[slug]">["params"]
+ }
+ export async function generateMetadata({ params }: PageProps<"/[locale]/work/[slug]">): Promise<Metadata> {
+   const { study, locale } = await resolveStudy(params);
+-  return pageMetadata(locale, "/work/" + study.slug, study.title[locale] + d.titleSeparator[locale] + d.siteTitle[locale], study.roleLine[locale]);
+-}
+-function TextContent({ item, locale }: { item: RichText; locale: Locale }) {
+-  return <>{item.lead && <><strong>{item.lead[locale]}</strong>{formatting.leadSeparator[locale]}</>}{item.text[locale]}</>;
++  return pageMetadata(locale, "/work/" + study.slug, study.title[locale] + d.titleSeparator[locale] + d.siteTitle[locale], study.summary[locale]);
+ }
+ export default async function CaseStudyPage({ params }: PageProps<"/[locale]/work/[slug]">) {
+   const { study, locale } = await resolveStudy(params);
+   return <article>
+     <header><h1>{study.title[locale]}</h1><p>{study.roleLine[locale]}</p>
++      <p>{d[study.status][locale]}</p>
+       <p><time dateTime={study.period.start}>{formatDate(study.period.start, locale)}</time>{d.periodSeparator[locale]}
+         {study.period.end ? <time dateTime={study.period.end}>{formatDate(study.period.end, locale)}</time> : d.present[locale]}</p>
+     </header>
++    <WorkImage image={study.cover} locale={locale} />
+     <section><h2>{d.stack[locale]}</h2><ul className="data">{study.stack.map((item, i) => <li key={i}>{item}</li>)}</ul></section>
+-    <section><h2>{d.links[locale]}</h2><ul>{study.links.map((link, i) => <li key={i}><a href={link.href}>{link.label[locale]}</a></li>)}</ul></section>
++    {study.links.length > 0 && <section><h2>{d.links[locale]}</h2><ul>{study.links.map((link, i) => <li key={i}><a href={link.href}>{link.label[locale]}</a></li>)}</ul></section>}
+     <section><h2>{d.highlights[locale]}</h2><ul>{study.highlights.map((item, i) => <li key={i}>{item[locale]}</li>)}</ul></section>
+     {study.sections.map((section, i) => <section key={i}><h2>{section.heading[locale]}</h2>
+       {section.blocks.map((block, j) => block.type === "paragraph"
+         ? <p key={j}><TextContent item={block} locale={locale} /></p>
+         : <ul key={j}>{block.items.map((item, k) => <li key={k}><TextContent item={item} locale={locale} /></li>)}</ul>)}
+     </section>)}
++    <section><h2>{d.gallery[locale]}</h2>{study.gallery.map(image => <WorkImage key={image.src} image={image} locale={locale} />)}</section>
+     <LanguageSelector locale={locale} suffix={"/work/" + study.slug} />
+   </article>;
+ }
+diff --git a/web/app/[locale]/work/page.tsx b/web/app/[locale]/work/page.tsx
+index b61e28f..bbcb0bf 100644
+--- a/web/app/[locale]/work/page.tsx
++++ b/web/app/[locale]/work/page.tsx
+@@ -1,5 +1,7 @@
+-import Link from "next/link";
+ import { caseStudies } from "@/content/case-studies";
++import { projectEntries } from "@/content/projects";
++import { CaseStudyList } from "@/components/case-study-list";
++import { ProjectList } from "@/components/project-list";
+ import { dictionary as d } from "@/content/dictionary";
+ import { requireLocale } from "@/lib/routing";
+ import { pageMetadata } from "@/lib/metadata";
+@@ -10,7 +12,12 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/work">)
+ }
+ export default async function Work({ params }: PageProps<"/[locale]/work">) {
+   const locale = requireLocale((await params).locale);
+-  return <><h1>{d.work[locale]}</h1><ul>{caseStudies.map((study) =>
+-    <li key={study.slug}><Link href={`/${locale}/work/${study.slug}`}>{study.title[locale]}</Link><p>{study.roleLine[locale]}</p></li>
+-  )}</ul><LanguageSelector locale={locale} suffix="/work" /></>;
++  const employers = [...new Set(projectEntries.flatMap(entry => entry.employer ? [entry.employer] : []))];
++  return <><h1>{d.work[locale]}</h1>
++    <section><h2>{d.caseStudies[locale]}</h2><CaseStudyList studies={caseStudies} locale={locale} /></section>
++    <section><h2>{d.otherWork[locale]}</h2><ProjectList entries={projectEntries.filter(entry => !entry.employer)} locale={locale} /></section>
++    {employers.map(employer => <section key={employer}><h2>{employer}</h2>
++      <ProjectList entries={projectEntries.filter(entry => entry.employer === employer)} locale={locale} />
++    </section>)}
++    <LanguageSelector locale={locale} suffix="/work" /></>;
+ }
+diff --git a/web/app/globals.css b/web/app/globals.css
+index 16c294a..c0596c6 100644
+--- a/web/app/globals.css
++++ b/web/app/globals.css
+@@ -13,3 +13,5 @@ p, ul, section, nav { margin-block: 1rem; }
+ ul { list-style: disc; padding-inline-start: 1.5rem; }
+ a { text-decoration: underline; }
+ nav a + a { margin-inline-start: 1rem; }
++.screenshot { display: block; max-width: 100%; height: auto; margin-block: 1rem; }
++.screenshot.mobile { max-width: min(100%, 22.5rem); }
+diff --git a/web/content/case-studies.ts b/web/content/case-studies.ts
+index b329765..1522cb9 100644
+--- a/web/content/case-studies.ts
++++ b/web/content/case-studies.ts
+@@ -1,27 +1,958 @@
+ import type { CaseStudy } from "./types";
+ 
+-export const caseStudies: readonly CaseStudy[] = [{
+-  slug: "example-project",
+-  title: { es: "Proyecto de ejemplo", en: "Example project" },
+-  roleLine: { es: "Desarrollador full-stack — placeholder", en: "Full-stack developer — placeholder" },
+-  period: { start: "2026-01", end: null },
+-  stack: ["React", "TypeScript", "Supabase"],
+-  links: [{ label: { es: "Enlace de ejemplo", en: "Example link" }, href: "https://example.com" }],
+-  highlights: [{ es: "Resultado pendiente de documentar.", en: "Outcome to be documented." }],
+-  sections: [{
+-    heading: { es: "Contexto", en: "Context" },
+-    blocks: [
+-      { type: "paragraph", lead: { es: "Problema:", en: "Problem:" }, text: { es: "Texto de ejemplo para reemplazar por el contexto real.", en: "Placeholder text to replace with the actual context." } },
+-      { type: "paragraph", text: { es: "Acá irá el alcance del proyecto.", en: "The project scope will go here." } },
+-    ],
+-  }, {
+-    heading: { es: "Implementación", en: "Implementation" },
+-    blocks: [{ type: "bullets", items: [
+-      { lead: { es: "Decisión:", en: "Decision:" }, text: { es: "Explicar una decisión técnica.", en: "Explain a technical decision." } },
+-      { text: { es: "Agregar una lección aprendida.", en: "Add a lesson learned." } },
+-    ] }],
+-  }],
+-}];
++// Text copied literally from the previous portfolio; see docs/content-migration.md.
++export const caseStudies: readonly CaseStudy[] = [
++  {
++    "slug": "solution",
++    "title": {
++      "es": "Solution Perfumes: e-commerce a medida, de ~80 a ~300 pedidos por mes",
++      "en": "Solution Perfumes: custom e-commerce, from ~80 to ~300 orders a month"
++    },
++    "roleLine": {
++      "es": "Desarrollador full-stack · en producción abr–oct 2026",
++      "en": "Full-stack developer · in production Apr–Oct 2026"
++    },
++    "period": {
++      "start": "2026-02",
++      "end": "2026-09"
++    },
++    "status": "archived",
++    "featured": true,
++    "order": 1,
++    "summary": {
++      "es": "Desarrollé la plataforma de e-commerce propia de Solution, que entró en producción a principios de abril de 2026. La marca pasó de unos 80 pedidos mensuales en Tienda Nube a unos 300, y al 14 de septiembre de 2026 la plataforma había procesado 1.086 pedidos de 1.006 compradores únicos.",
++      "en": "I built Solution’s custom e-commerce platform, which went live in early April 2026. The brand went from around 80 monthly orders on Tienda Nube to around 300, and as of September 14, 2026, the platform had processed 1,086 orders from 1,006 unique buyers."
++    },
++    "cover": {
++      "src": "/work/solution/solution-home.webp",
++      "alt": {
++        "es": "Portada de Solution Perfumes en escritorio: presentación de fragancias y acceso al carrito.",
++        "en": "Solution Perfumes desktop homepage: fragrance introduction and cart access."
++      },
++      "width": 2532,
++      "height": 1266,
++      "variant": "desktop"
++    },
++    "gallery": [
++      {
++        "src": "/work/solution/solution-home-mobile.webp",
++        "alt": {
++          "es": "Vista mobile de SOLUTION: interfaz del e-commerce adaptada a pantalla pequeña.",
++          "en": "SOLUTION mobile view: e-commerce interface adapted for small screens."
++        },
++        "width": 850,
++        "height": 1100,
++        "variant": "mobile"
++      }
++    ],
++    "stack": [
++      "React",
++      "Node.js",
++      "Mercado Pago",
++      "REST API",
++      "Correo Argentino",
++      "Auth"
++    ],
++    "links": [],
++    "highlights": [
++      {
++        "es": "Mercado Pago como única pasarela.",
++        "en": "Mercado Pago as the sole payment provider."
++      },
++      {
++        "es": "Envíos nacionales mediante Correo Argentino.",
++        "en": "Nationwide shipping through Correo Argentino."
++      },
++      {
++        "es": "Checkout con estados explícitos de pago.",
++        "en": "Checkout with explicit payment states."
++      },
++      {
++        "es": "Portal mayorista con aprobación de cuenta y acceso por plan.",
++        "en": "Wholesale portal with account approval and plan-based access."
++      }
++    ],
++    "sections": [
++      {
++        "heading": {
++          "es": "Contexto",
++          "en": "Context"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Solution vendía en Tienda Nube y procesaba unos 80 pedidos por mes. Necesitaba cosas que la plataforma no le daba: un canal mayorista con reglas propias, envíos con su cuenta de Correo Argentino y una atribución confiable de compras para Meta Ads, su principal canal de venta.",
++                  "en": "Solution sold on Tienda Nube and handled around 80 orders a month. They needed things the platform didn’t give them: a wholesale channel with its own rules, shipping through their own Correo Argentino account, and reliable purchase attribution for Meta ads, their main sales channel."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Qué construí",
++          "en": "What I built"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Una tienda propia de punta a punta: SPA en React, API en Node/Express y Supabase (Postgres, Auth, Storage). Checkout con Mercado Pago; envíos con Correo Argentino, con cotización en vivo, retiro en sucursal y despacho; un portal mayorista con aprobación de cuentas y acceso por plan; y un panel de administración que los dueños usaban a diario para pedidos, productos, métricas y rentabilidad. Después del lanzamiento seguí sumando mejoras a partir de reuniones de seguimiento con el cliente cada dos o tres semanas.",
++                  "en": "A custom store, end to end: React SPA, Node/Express API, and Supabase (Postgres, Auth, Storage). Mercado Pago checkout; Correo Argentino shipping with live quotes, branch pickup and dispatch; a wholesale portal with account approval and plan-based access; and an admin panel the owners used daily for orders, products, metrics and profit. After launch I kept shipping improvements based on check-ins with the client every two to three weeks."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Decisiones que importaron",
++          "en": "Decisions that mattered"
++        },
++        "blocks": [
++          {
++            "type": "bullets",
++            "items": [
++              {
++                "lead": {
++                  "es": "El pago lo confirma Mercado Pago, no la redirección.",
++                  "en": "A payment is confirmed by Mercado Pago, not by the redirect."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Volver a la URL de “éxito” no marca un pedido como pagado. El servidor consulta el pago en Mercado Pago, verifica que corresponda a ese pedido y recién ahí lo confirma. Los webhooks se validan con firma HMAC.",
++                      "en": "Landing on the “success” URL doesn’t mark an order as paid. The server asks Mercado Pago for the payment, checks that it belongs to that order, and only then confirms it. Webhooks are verified with an HMAC signature."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Reintentar un timeout, nunca un 5xx, al crear un envío.",
++                  "en": "Retry a timeout, never a 5xx, when creating a shipment."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Crear un envío en Correo despacha un paquete real, así que solo reintento errores de red, con backoff. Cada falla guarda el request y la respuesta exactos para que el administrador vea qué pasó. Esto reduce los despachos duplicados pero no los elimina, porque un timeout también puede significar que el envío se creó (ver abajo).",
++                      "en": "Creating a shipment with Correo dispatches a real package, so I only retry network errors, with backoff. Every failure stores the exact request and response so the admin can see what went wrong. This reduces duplicate dispatches but doesn’t eliminate them, since a timeout can also mean the shipment was created (see below)."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Seguimiento de compras desde el servidor sin contar dos veces.",
++                  "en": "Server-side purchase tracking without double counting."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Los bloqueadores de anuncios e iOS rompían la atribución. Sumé la Conversions API de Meta desde el servidor, con datos del cliente hasheados y el mismo ID de evento que el pixel del navegador (",
++                      "en": "Ad blockers and iOS were breaking attribution. I added Meta’s Conversions API from the server with hashed customer data, sharing the same event ID as the browser pixel ("
++                    }
++                  },
++                  {
++                    "type": "code",
++                    "value": "purchase_<orderId>"
++                  },
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "), para que Meta cuente cada venta una sola vez.",
++                      "en": ") so Meta counts each sale once."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Un problema de costos real.",
++                  "en": "Fixing a real cost problem."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Los videos de productos y testimonios nos llevaron muy por encima de la cuota de egress de Supabase. Los moví a Cloudflare R2, que no cobra egress, y agregué posters y carga diferida. El consumo bajó fuerte después del cambio.",
++                      "en": "Product and testimonial videos pushed us well over the Supabase egress quota. I moved them to Cloudflare R2, which has free egress, and added posters and deferred loading. Egress dropped sharply after the change."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Rentabilidad, no solo facturación.",
++                  "en": "Profit, not just revenue."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "La calculadora del panel guarda el costo de cada producto al momento de la venta, usa las comisiones que efectivamente cobró Mercado Pago y el costo real de envío aunque sea gratis para el comprador, y prorratea los gastos fijos por día.",
++                      "en": "The admin calculator snapshots each product’s cost at the moment of sale, uses the actual fees Mercado Pago charged and the real shipping cost even when shipping is free for the buyer, and prorates fixed expenses by day."
++                    }
++                  }
++                ]
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Resultados",
++          "en": "Results"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Salió a producción a principios de abril de 2026. Al 14 de septiembre había procesado 1.086 pedidos de 1.006 compradores únicos, y la marca pasó de ~80 a ~300 pedidos por mes.",
++                  "en": "Went live in early April 2026. By September 14 it had processed 1,086 orders from 1,006 unique buyers, and the brand went from ~80 to ~300 orders a month."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Por qué pasó a Shopify",
++          "en": "Why it moved to Shopify"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "El cliente iba a cambiar Correo Argentino por Andreani, y los proveedores de logística cambiaban seguido. Dimensioné y coticé con honestidad la integración con Andreani: en una plataforma propia, cada cambio de logística es trabajo de desarrollo. Lo evaluaron y migraron a Shopify, donde cambiar de proveedor son unos pocos clics. Estuve de acuerdo. El desarrollo a medida rindió mientras el negocio crecía; cuando la logística pasó a ser lo que cambiaba todo el tiempo, comprar tuvo más sentido que construir.",
++                  "en": "The client was switching from Correo Argentino to Andreani, and logistics providers kept changing. I scoped and quoted the Andreani integration honestly: on a custom platform, every carrier change means development work. After weighing it, they moved to Shopify, where changing carriers is a few clicks. I agreed with the call. Building custom paid off while the business grew; once logistics became the part that kept changing, buying made more sense than building."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Qué haría distinto",
++          "en": "What I’d do differently"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Mirando el código hoy:",
++                  "en": "Looking at the code today:"
++                }
++              }
++            ]
++          },
++          {
++            "type": "bullets",
++            "items": [
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Los precios y el costo de envío deberían salir solo del servidor, nunca del navegador.",
++                      "en": "Prices and shipping cost should come only from the server, never from the browser."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "El pedido y sus ítems deberían crearse en una sola transacción, con una clave de idempotencia que sobreviva a los reintentos.",
++                      "en": "Orders and their items should be created in one transaction, with an idempotency key that survives retries."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Los webhooks deberían guardarse antes de confirmarse y procesarse desde una cola.",
++                      "en": "Webhooks should be stored before being acknowledged, and processed from a queue."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Todos los endpoints de administración deberían estar autenticados en la API, no solo ocultos en la interfaz.",
++                      "en": "Every admin endpoint should be authenticated at the API, not just hidden in the UI."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "La creación de envíos debería conciliar los resultados inciertos (un timeout que en realidad creó el envío) en vez de adivinar.",
++                      "en": "Shipment creation should reconcile uncertain results (a timeout that actually created the shipment) instead of guessing."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Tests para las invariantes críticas: webhooks duplicados, envíos con resultado incierto y parseo de direcciones.",
++                      "en": "Tests for the critical invariants: duplicate webhooks, uncertain shipment creation, and address parsing."
++                    }
++                  }
++                ]
++              }
++            ]
++          }
++        ]
++      }
++    ]
++  },
++  {
++    "slug": "don-teofilo-amoblamientos",
++    "title": {
++      "es": "Don Teófilo Amoblamientos: marca, sitio y panel para una carpintería a medida",
++      "en": "Don Teófilo Amoblamientos: brand, website and admin panel for a custom carpentry shop"
++    },
++    "roleLine": {
++      "es": "Diseñador y desarrollador full-stack",
++      "en": "Designer & full-stack developer"
++    },
++    "period": {
++      "start": "2026-07",
++      "end": "2026-10"
++    },
++    "status": "live",
++    "featured": true,
++    "order": 2,
++    "summary": {
++      "es": "Don Teófilo mostraba su trabajo solo por WhatsApp. Diseñé la identidad visual y desarrollé el sitio y su panel de administración: un lenguaje tomado de los planos de carpintería, reglas de publicación aplicadas en la base de datos y consultas por WhatsApp según la sección.",
++      "en": "Don Teófilo only showed its work through WhatsApp. I designed the visual identity and built the website and its admin panel: a visual language drawn from carpentry plans, publishing rules enforced in the database, and WhatsApp inquiries tailored to each section."
++    },
++    "cover": {
++      "src": "/work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home.png",
++      "alt": {
++        "es": "Portada de Don Teófilo: cocina a medida, lema «Medimos dos veces, cortamos una.», accesos a presupuesto y proyectos, controles del carrusel y WhatsApp. Vista de escritorio.",
++        "en": "Don Teófilo homepage: custom kitchen, “Medimos dos veces, cortamos una.” headline, quote and project links, carousel controls and WhatsApp. Desktop view."
++      },
++      "width": 2516,
++      "height": 1257,
++      "variant": "desktop"
++    },
++    "gallery": [
++      {
++        "src": "/work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home-mobile.png",
++        "alt": {
++          "es": "Portada de Don Teófilo: menú móvil, cocina a medida, lema «Medimos dos veces, cortamos una.», accesos a presupuesto y proyectos, controles del carrusel y WhatsApp. Vista móvil.",
++          "en": "Don Teófilo homepage: mobile menu, custom kitchen, “Medimos dos veces, cortamos una.” headline, quote and project links, carousel controls and WhatsApp. Mobile view."
++        },
++        "width": 850,
++        "height": 1100,
++        "variant": "mobile"
++      }
++    ],
++    "stack": [
++      "React",
++      "Vite",
++      "JavaScript",
++      "React Router",
++      "Framer Motion",
++      "Supabase",
++      "PostgreSQL",
++      "RLS",
++      "SVG",
++      "CSS Modules"
++    ],
++    "links": [
++      {
++        "label": {
++          "es": "Don Teófilo Amoblamientos",
++          "en": "Don Teófilo Amoblamientos"
++        },
++        "href": "https://www.donteofiloamoblamientos.com/"
++      }
++    ],
++    "highlights": [
++      {
++        "es": "Identidad visual «Al milímetro», tomada del lenguaje de los planos de taller.",
++        "en": "“Al milímetro” visual identity, drawn from the language of workshop plans."
++      },
++      {
++        "es": "Ilustraciones SVG generadas desde datos en milímetros, nítidas en cualquier pantalla.",
++        "en": "SVG illustrations generated from millimeter data, crisp on any screen."
++      },
++      {
++        "es": "Reglas de visibilidad aplicadas en la base de datos con RLS y un trigger.",
++        "en": "Visibility rules enforced in the database with RLS and a trigger."
++      }
++    ],
++    "sections": [
++      {
++        "heading": {
++          "es": "Contexto",
++          "en": "Context"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Don Teófilo hace muebles a medida en Buenos Aires y Tandil. Sus ventas pasaban enteramente por WhatsApp: no había dónde ver el catálogo ni los trabajos terminados antes de escribir. El pedido era abierto (mostrar el trabajo y conseguir más clientes), sin especificaciones detalladas. Definí el alcance, la identidad visual y las funcionalidades, y los ajusté en dos reuniones de revisión con el cliente. Entregué una primera versión con catálogo y panel en julio y agosto, y en octubre rediseñé todo el sitio alrededor de una nueva identidad.",
++                  "en": "Don Teófilo builds custom furniture in Buenos Aires and Tandil. Their sales ran entirely through WhatsApp: there was nowhere to see the catalog or finished work before reaching out. The brief was open (show the work, bring in more clients), with no detailed spec. I defined the scope, the visual identity and the features, and refined them across two review sessions with the client. I shipped a first version with the catalog and admin panel in July and August, then redesigned the whole site in October around a new identity."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Qué construí",
++          "en": "What I built"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "La identidad visual, «Al milímetro», además del sitio y su panel de administración. React y Vite en el frontend, conectado directamente a Supabase (Postgres, Auth, Storage), con las reglas de acceso aplicadas en la base mediante RLS. Un catálogo filtrable por categoría, material, precio y búsqueda; páginas de obras con antes y después y galería; una sección del taller; y botones de WhatsApp que llevan el contexto del producto u obra que se estaba viendo. Las fotos se redimensionan y se convierten a WebP en el navegador antes de subirse, así el cliente puede publicar directo desde el celular.",
++                  "en": "The visual identity, “Al milímetro” (“down to the millimeter”), plus the website and its admin panel. React and Vite on the front end, talking directly to Supabase (Postgres, Auth, Storage), with access rules enforced in the database through row-level security. A catalog filterable by category, material, price and search; project pages with before-and-after views and a gallery; a workshop section; and WhatsApp buttons that carry the context of the product or project being viewed. Photos are resized and converted to WebP in the browser before upload, so the client can publish straight from a phone."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Decisiones que importaron",
++          "en": "Decisions that mattered"
++        },
++        "blocks": [
++          {
++            "type": "bullets",
++            "items": [
++              {
++                "lead": {
++                  "es": "Una identidad tomada del taller.",
++                  "en": "An identity taken from the workshop."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Los carpinteros trabajan con planos, así que la interfaz habla ese idioma: cotas, medidas, dibujos técnicos. Diferencia al sitio de un catálogo genérico de muebles y refleja cómo funciona el oficio.",
++                      "en": "Carpenters work from plans, so the interface speaks that language: dimension lines, measurements, technical drawings. It sets the site apart from a generic furniture catalog and reflects how the trade actually works."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Ilustraciones generadas desde datos, no exportadas.",
++                  "en": "Illustrations generated from data, not exported."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Cada categoría del catálogo tiene un alzado de una pieza típica, descrito en milímetros, módulo por módulo: puertas, cajones, estantes. El componente mide su contenedor, calcula una escala uniforme de milímetros a píxeles y dibuja el SVG al tamaño real del contenedor, así los trazos y las cotas se ven nítidos en cualquier pantalla. Las aristas ocultas van punteadas, como en un plano real, y una categoría nueva armada con tipos de módulo existentes es solo datos. La página «Cómo trabajamos» aplica la misma idea a una vista isométrica de un bajo mesada, con su propia proyección.",
++                      "en": "Each catalog category has a front-elevation drawing of a typical piece, described in millimeters, module by module: doors, drawers, shelves. The component measures its container, computes a uniform millimeter-to-pixel scale, and draws the SVG at the container’s real size, so lines and dimension labels stay crisp on any screen. Hidden edges are dashed, like on a real plan, and a new category built from existing module types is just data. The “How we work” page applies the same idea to an isometric view of a base cabinet, with its own projection math."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Dos antes y después para dos problemas distintos.",
++                  "en": "Two before-and-after components for two different problems."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "En la portada, la transición sigue el scroll dentro de una sección fijada, sin arrastre, para no competir con el desplazamiento en el celular. En cada obra hay un comparador arrastrable: en pantallas táctiles, al arrastrar sobre la imagen espera 8 px para leer la dirección del gesto y solo toma los horizontales, así la página se sigue pudiendo scrollear. Actualiza el DOM directamente en lugar de pasar por el estado de React y se puede usar con teclado. Con movimiento reducido, ambos pasan a una comparación estática.",
++                      "en": "On the homepage, the transition follows the scroll inside a pinned section, with no dragging, so it never fights with scrolling on a phone. On project pages there’s a draggable comparator: on touch, a drag over the image waits 8 px to read the gesture’s direction and only takes horizontal moves, so the page still scrolls. It updates the DOM directly instead of going through React state, and works with the keyboard. With reduced motion, both fall back to a static comparison."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Las reglas de visibilidad viven en la base de datos, no en la interfaz.",
++                  "en": "Visibility rules live in the database, not the UI."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Las políticas RLS solo dejan que los visitantes lean productos y obras publicados, y la galería y la ficha de cada obra heredan el estado de su proyecto. Cuando se destaca una obra nueva en la portada, un trigger desmarca la anterior.",
++                      "en": "Row-level security only lets visitors read published products and projects, and each project’s gallery and details inherit their parent’s status. When a new project is featured on the homepage, a database trigger unsets the previous one."
++                    }
++                  }
++                ]
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Resultado",
++          "en": "Outcome"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "En producción con dominio propio, con identidad de marca, catálogo y archivo de obras. El cliente puede publicar productos, obras y publicaciones del taller por su cuenta, y ordenar obras y publicaciones del taller, sin depender de un desarrollador ni de un nuevo deploy.",
++                  "en": "Live on its own domain, with a brand identity, a catalog and a project archive. The client can publish products, projects and workshop posts on their own and reorder projects and workshop posts, without depending on a developer or a redeploy."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Qué haría distinto",
++          "en": "What I’d do differently"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Mirando el código hoy:",
++                  "en": "Looking at the code today:"
++                }
++              }
++            ]
++          },
++          {
++            "type": "bullets",
++            "items": [
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Las reglas de acceso deberían verificar un rol de administrador, no solo que haya un usuario logueado, tanto en las tablas como en el almacenamiento de imágenes.",
++                      "en": "Access rules should check for an admin role, not just a logged-in user, for both tables and image storage."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Todo el esquema de la base debería estar versionado en migraciones. Algunos campos que usa la app se agregaron por fuera, así que la base no se puede reconstruir solo desde el repo.",
++                      "en": "The full database schema should be versioned in migrations. Some fields the app relies on were added outside them, so the database can’t be rebuilt from the repo alone."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Las consultas públicas deberían pedir columnas explícitas en vez de ",
++                      "en": "Public queries should request explicit columns instead of "
++                    }
++                  },
++                  {
++                    "type": "code",
++                    "value": "*"
++                  },
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": ", para que un precio que el cliente decidió ocultar no llegue igual al navegador.",
++                      "en": ", so a price the client chose to hide isn’t still sent to the browser."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Crear un producto u obra con imágenes lleva varios pasos separados. Deberían completarse todos o limpiarse, en vez de dejar registros a medias o archivos huérfanos.",
++                      "en": "Creating a product or project with images takes several separate steps. They should either all succeed or clean up after themselves, instead of leaving partial records or orphaned files."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Las especificaciones de los dibujos merecen validación y tests: hoy un tipo de módulo desconocido se ignora sin avisar.",
++                      "en": "The drawing specs deserve validation and tests: today an unknown module type is skipped silently."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "El panel necesita subidas operables con teclado y una forma de reordenar que no dependa del arrastre.",
++                      "en": "The admin panel needs keyboard-accessible uploads and a non-drag way to reorder."
++                    }
++                  }
++                ]
++              }
++            ]
++          }
++        ]
++      }
++    ]
++  },
++  {
++    "slug": "format",
++    "title": {
++      "es": "FORMAT: un sitio donde cada edición mensual trae su propia identidad visual",
++      "en": "FORMAT: a website where every monthly edition brings its own visual identity"
++    },
++    "roleLine": {
++      "es": "Diseñador y desarrollador full-stack",
++      "en": "Designer & full-stack developer"
++    },
++    "period": {
++      "start": "2026-08",
++      "end": null
++    },
++    "status": "ongoing",
++    "featured": true,
++    "order": 3,
++    "summary": {
++      "es": "FORMAT necesitaba reunir la próxima fecha, su lineup y flyer, sin perder el archivo de ediciones anteriores. Organicé el contenido en Seasons mensuales que también definen la identidad visual, con publicación desde el panel sin redeploy.",
++      "en": "FORMAT needed to bring together its next event, lineup and flyer while preserving an archive of past editions. I organized the content into monthly Seasons that also define the visual identity, with publishing through the admin panel without redeployment."
++    },
++    "cover": {
++      "src": "/work/format/format-home-hero.png",
++      "alt": {
++        "es": "Portada de FORMAT: identidad ASCENT, trama violeta y lema del ciclo. Vista de escritorio.",
++        "en": "FORMAT homepage: ASCENT identity, purple pattern and event series tagline. Desktop view."
++      },
++      "width": 1904,
++      "height": 912,
++      "variant": "desktop"
++    },
++    "gallery": [
++      {
++        "src": "/work/format/format-home-hero-mobile.png",
++        "alt": {
++          "es": "Portada de FORMAT: identidad ASCENT, trama violeta y lema del ciclo. Vista móvil.",
++          "en": "FORMAT homepage: ASCENT identity, purple pattern and event series tagline. Mobile view."
++        },
++        "width": 850,
++        "height": 1660,
++        "variant": "mobile"
++      }
++    ],
++    "stack": [
++      "Next.js 15",
++      "React 19",
++      "TypeScript",
++      "Supabase",
++      "Three.js",
++      "GLSL",
++      "Playwright"
++    ],
++    "links": [
++      {
++        "label": {
++          "es": "FORMAT",
++          "en": "FORMAT"
++        },
++        "href": "https://productions-format.com/"
++      }
++    ],
++    "highlights": [
++      {
++        "es": "Identidad visual por Season, derivada de los datos de forma y paleta.",
++        "en": "Per-season visual identity derived from shape and palette data."
++      },
++      {
++        "es": "Shader GLSL halftone con Three.js que responde a la Season activa.",
++        "en": "Halftone GLSL shader built with Three.js, driven by the active season."
++      },
++      {
++        "es": "Panel autogestionado con Server Actions que publica sin redeploy.",
++        "en": "Self-managed admin panel with Server Actions, publishing without a redeploy."
++      }
++    ],
++    "sections": [
++      {
++        "heading": {
++          "es": "Contexto",
++          "en": "Context"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "FORMAT es un ciclo de música electrónica de Buenos Aires, organizado en Seasons mensuales de fechas los viernes. Cada Season tiene su nombre, su paleta y su forma. Los organizadores necesitaban un sitio que explicara qué es FORMAT, que mostrara las próximas fechas con su lineup y flyer, que conservara un archivo de ediciones anteriores, y que les permitiera gestionar todo por su cuenta: Seasons, fechas, lineups, horarios y fotos. Tenían un manual de marca; sobre esa base diseñé el lenguaje visual del sitio.",
++                  "en": "FORMAT is an electronic music event series in Buenos Aires, organized in monthly seasons of Friday events. Each season has its own name, palette and shape. The organizers needed a site that explained what FORMAT is, made upcoming dates easy to find with their lineup and flyer, kept an archive of past editions, and let them manage all of it on their own: seasons, dates, lineups, schedules and photos. They had a brand manual; I designed the website’s visual language on top of it."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Qué construí",
++          "en": "What I built"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Un sitio en Next.js 15 (App Router) con React 19 y TypeScript estricto, sobre Supabase (Postgres, Auth, Storage). Páginas públicas con próximas fechas, eventos con su lineup y un archivo, más un panel de administración desde el que los organizadores manejan todo. El núcleo lo construí en agosto de 2026, y sigo trabajando con ellos todos los meses: mejoras del panel, optimización de imágenes, aftermovies mensuales y formas nuevas para cada Season.",
++                  "en": "A Next.js 15 (App Router) site with React 19 and strict TypeScript, backed by Supabase (Postgres, Auth, Storage). Public pages for upcoming dates, events with their lineup, and an archive, plus an admin panel where the organizers run everything. I built the core in August 2026 and keep working with them monthly: panel improvements, image optimization, monthly aftermovies, and new shapes for new seasons."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Decisiones que importaron",
++          "en": "Decisions that mattered"
++        },
++        "blocks": [
++          {
++            "type": "bullets",
++            "items": [
++              {
++                "lead": {
++                  "es": "El contenido decide la estética.",
++                  "en": "The content decides the look."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Una Season guarda su forma y su paleta, y el sitio deriva de esos datos sus acentos, stickers y fondos. Los colores se propagan como variables CSS definidas en la raíz de la página y expuestas a Tailwind; las páginas de evento las vuelven a aplicar con su propia Season, y cada tarjeta lleva la identidad de su Season por props, así mantiene su estética dentro de una página con otro tema. El texto sobre colores de acento alterna entre papel y tinta automáticamente según el contraste. Una Season que reutiliza una forma existente es solo datos; cuando los organizadores quieren una geometría nueva, la agrego al set compartido de formas en SVG y GLSL.",
++                      "en": "A season stores its shape and palette, and the site derives its accents, stickers and backgrounds from that data. Colors propagate as CSS custom properties set at the page root and exposed to Tailwind; event pages reapply them for their own season, and each card carries its season’s identity through props, so it keeps its look inside a page themed by another season. Text over accent colors switches between paper and ink automatically for contrast. A season that reuses an existing shape is just data; when the organizers want a new geometry, I add it to the shared set of SVG and GLSL shapes."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Un shader en el hero que responde a la Season activa.",
++                  "en": "A hero shader driven by the active season."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Three.js renderiza un único plano a pantalla completa con un shader GLSL propio. Dibuja la forma de la Season con funciones de distancia firmada, la deforma en el tiempo con ruido simplex (de dominio público) y la muestrea por celdas en una trama de puntos halftone con el color de la Season. Se pausa fuera de pantalla o con la pestaña oculta, muestra un único frame estático con movimiento reducido, limita el pixel ratio en mobile y, si WebGL falla, quedan el fondo CSS y el contenido.",
++                      "en": "Three.js renders a single full-screen plane with a custom GLSL shader. It draws the season’s shape with signed distance functions, warps it over time with (public-domain) simplex noise, and samples it per cell into a halftone dot pattern in the season’s color. It pauses when off-screen or in a hidden tab, renders a single static frame with reduced motion, caps the pixel ratio on mobile, and if WebGL fails, the CSS background and content stay in place."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "Un panel pensado para organizadores, no para desarrolladores.",
++                  "en": "An admin panel built for organizers, not developers."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Fue lo más difícil: las Seasons contienen fechas, las fechas contienen lineups y horarios, y todo tiene que mantenerse consistente mientras lo editan personas sin perfil técnico. Las fotos se comprimen a WebP en el navegador antes de subirse, así pueden publicar directo desde el celular. Los cambios pasan por Server Actions de Next.js que guardan en Supabase y revalidan las páginas afectadas, así se publican sin redeploy. La Season activa se calcula en hora de Buenos Aires: la que incluye el día de hoy; si no hay, la próxima; si no, la más reciente.",
++                      "en": "This was the hardest part: seasons contain dates, dates contain lineups and schedules, and all of it has to stay consistent while non-technical people edit it. Photos are compressed to WebP in the browser before upload, so organizers can publish straight from a phone. Edits go through Next.js Server Actions that save to Supabase and revalidate the affected pages, so changes go live without a redeploy. The active season is resolved in Buenos Aires time: the one whose dates include today, otherwise the next one, otherwise the most recent."
++                    }
++                  }
++                ]
++              },
++              {
++                "lead": {
++                  "es": "La escritura está restringida en dos capas, y está testeada.",
++                  "en": "Writes are restricted at two layers, and tested."
++                },
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Cualquiera puede leer; solo los usuarios con rol de administrador en su token pueden escribir. Eso lo aplican las políticas RLS de Postgres y se vuelve a verificar en cada Server Action. Una suite de Playwright corre contra un Supabase local para verificar roles, borrados cuando falla Storage y qué pasa si un administrador pierde su rol; las páginas públicas se prueban en desktop y mobile.",
++                      "en": "Anyone can read; only users with an admin role in their auth token can write. That’s enforced by row-level security in Postgres and checked again in every server action. A Playwright suite runs against a local Supabase stack to verify roles, deletions when storage fails, and what happens when an admin loses their role; the public pages are tested on desktop and mobile viewports."
++                    }
++                  }
++                ]
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Resultado",
++          "en": "Outcome"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Los organizadores manejan el sitio por su cuenta: crean Seasons, fechas, lineups y horarios, y publican un aftermovie nuevo cada mes. Sigo trabajando con ellos mensualmente en el panel y en nuevas identidades visuales.",
++                  "en": "The organizers run the site themselves: they create seasons, dates, lineups and schedules, and publish a new aftermovie every month. I keep working with them monthly on the panel and on new visual identities."
++                }
++              }
++            ]
++          }
++        ]
++      },
++      {
++        "heading": {
++          "es": "Qué haría distinto",
++          "en": "What I’d do differently"
++        },
++        "blocks": [
++          {
++            "type": "paragraph",
++            "segments": [
++              {
++                "type": "text",
++                "value": {
++                  "es": "Mirando el código hoy:",
++                  "en": "Looking at the code today:"
++                }
++              }
++            ]
++          },
++          {
++            "type": "bullets",
++            "items": [
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Validar la paleta de cada Season al guardarla: el esquema permite una vacía, y partes del sitio asumen que hay al menos un color.",
++                      "en": "Validate a season’s palette when it’s saved: the schema allows an empty one, and parts of the site assume there’s at least one color."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Hacer que la revalidación siga las dependencias reales: editar un lineup no actualiza la home, aunque la home usa datos del lineup.",
++                      "en": "Make revalidation follow real dependencies: editing a lineup doesn’t refresh the homepage, even though the homepage uses lineup data."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Distinguir “no hay datos” de “falló la carga”: hoy una caída de la base se vería como un calendario vacío.",
++                      "en": "Tell “no data” apart from “data failed to load”: today a database outage would look like an empty calendar."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Aplicar los límites de subida en el servidor, no solo con la compresión en el navegador.",
++                      "en": "Enforce upload limits on the server, not just through compression in the browser."
++                    }
++                  }
++                ]
++              },
++              {
++                "segments": [
++                  {
++                    "type": "text",
++                    "value": {
++                      "es": "Aplicar los mismos resguardos a todos los efectos WebGL. El fondo de las páginas de evento no tiene el manejo de movimiento reducido ni de errores que tiene el hero, y ninguno de los dos se recupera si se pierde el contexto WebGL.",
++                      "en": "Apply the same safeguards to every WebGL effect. The event-page background lacks the reduced-motion handling and error handling the hero has, and neither one recovers from a lost WebGL context."
++                    }
++                  }
++                ]
++              }
++            ]
++          }
++        ]
++      }
++    ]
++  }
++];
+ 
+ export function findCaseStudy(slug: string) {
+   return caseStudies.find((study) => study.slug === slug);
+diff --git a/web/content/content.test.ts b/web/content/content.test.ts
+index a7569d4..20dbd12 100644
+--- a/web/content/content.test.ts
++++ b/web/content/content.test.ts
+@@ -1,12 +1,13 @@
+ import { describe, expect, it } from "vitest";
+ import { caseStudies, findCaseStudy } from "@/content/case-studies";
++import { projectEntries } from "@/content/projects";
+ import { dictionary, formatting } from "@/content/dictionary";
+-import { isValidDate, validateCaseStudies, validateTranslations } from "@/content/validate";
++import { isValidDate, validateCaseStudies, validateProjects, validateTranslations, validateLinks } from "@/content/validate";
+ import { formatDate } from "@/lib/dates";
+ import { requireLocale } from "@/lib/routing";
+ describe("contenido", () => {
+   it("valida contenido y diccionarios", () => {
+-    expect(validateCaseStudies(caseStudies)).toEqual([]);
++    expect(validateProjects(caseStudies, projectEntries)).toEqual([]);
+     expect(validateTranslations(dictionary)).toEqual([]);
+     for (const token of Object.values(formatting)) {
+       expect(token.es.length).toBeGreaterThan(0);
+@@ -32,6 +33,18 @@ describe("contenido", () => {
+     expect(validateCaseStudies([caseStudies[0], caseStudies[0]]).filter((error) => error.includes("duplicado"))).toHaveLength(1);
+     expect(findCaseStudy(caseStudies[0].slug)).toBe(caseStudies[0]);
+     expect(findCaseStudy("missing")).toBeUndefined();
++    expect(validateProjects(caseStudies, [{ ...projectEntries[0], slug: caseStudies[0].slug }])).toContain("Slug duplicado: " + caseStudies[0].slug);
++    expect(validateProjects(caseStudies, [projectEntries[0], projectEntries[0]])).toContain("Slug duplicado: " + projectEntries[0].slug);
++  });
++  it.each(["invalid", "/relative", "javascript:alert(1)", "https://", "mailto:a@b.com"])("rechaza link %s", href => {
++    expect(validateLinks({ segments: [{ type: "link", href }] })).toHaveLength(1);
++  });
++  it("incluye solo los trabajos pedidos", () => {
++    expect(caseStudies.map(study => study.slug)).toEqual(["solution", "don-teofilo-amoblamientos", "format"]);
++    expect(caseStudies.map(study => study.status)).toEqual(["archived", "live", "ongoing"]);
++    expect(projectEntries).toHaveLength(12);
++    expect(projectEntries.filter(entry => entry.employer === "Zetenta")).toHaveLength(7);
++    expect(projectEntries.map(entry => entry.slug)).not.toEqual(expect.arrayContaining(["job-match-bot", "vyzon"]));
+   });
+   it("formatea meses y días en UTC sin inventar día visible", () => {
+     expect(formatDate("2026-01", "es")).toBe("enero de 2026");
+diff --git a/web/content/dictionary.ts b/web/content/dictionary.ts
+index f2cd81a..a21c2d1 100644
+--- a/web/content/dictionary.ts
++++ b/web/content/dictionary.ts
+@@ -4,7 +4,16 @@ export const dictionary = {
+   description: { es: "Portfolio full-stack en construcción.", en: "Full-stack portfolio under construction." },
+   home: { es: "Inicio", en: "Home" },
+   work: { es: "Proyectos", en: "Work" },
+-  placeholder: { es: "Próximamente: contenido del portfolio.", en: "Coming soon: portfolio content." },
++  caseStudies: { es: "Casos de estudio", en: "Case studies" },
++  featured: { es: "Proyectos destacados", en: "Featured work" },
++  otherWork: { es: "Otros trabajos", en: "Other work" },
++  gallery: { es: "Capturas", en: "Screenshots" },
++  client: { es: "Cliente", en: "Client" },
++  visitSite: { es: "Visitar sitio", en: "Visit website" },
++  live: { es: "Publicado", en: "Live" },
++  archived: { es: "Archivado", en: "Archived" },
++  ongoing: { es: "En curso", en: "Ongoing" },
++  placeholder: { es: "Portfolio en construcción. Proyectos destacados:", en: "Portfolio under construction. Featured work:" },
+   navigation: { es: "Navegación principal", en: "Main navigation" },
+   languages: { es: "Idiomas", en: "Languages" },
+   present: { es: "Actualidad", en: "Present" },
+diff --git a/web/content/types.ts b/web/content/types.ts
+index 9e3e5b5..438a99e 100644
+--- a/web/content/types.ts
++++ b/web/content/types.ts
+@@ -4,7 +4,19 @@ export type Localized<T> = { readonly [L in Locale]: T };
+ export type Text = Localized<string>;
+ /** Calendar validity is checked at runtime; a month represents its first day for ordering. */
+ export type ISODate = `${number}-${number}` | `${number}-${number}-${number}`;
+-export type RichText = { text: Text; lead?: Text };
++export type InlineSegment =
++  | { type: "text"; value: Text }
++  | { type: "code"; value: string }
++  | { type: "link"; label: Text; href: string };
++export type RichText = { segments: readonly InlineSegment[]; lead?: Text };
++export type Period = { start: ISODate; end?: ISODate | null };
++export type WorkImage = {
++  src: string;
++  alt: Text;
++  width: number;
++  height: number;
++  variant: "desktop" | "mobile";
++};
+ export type ContentBlock =
+   | ({ type: "paragraph" } & RichText)
+   | { type: "bullets"; items: readonly RichText[] };
+@@ -12,9 +24,26 @@ export type CaseStudy = {
+   slug: string;
+   title: Text;
+   roleLine: Text;
+-  period: { start: ISODate; end: ISODate | null };
++  period: Period & { end: ISODate | null };
++  status: "live" | "archived" | "ongoing";
++  featured: boolean;
++  order: number;
++  summary: Text;
++  cover: WorkImage;
++  gallery: readonly WorkImage[];
+   stack: readonly string[];
+   links: readonly { label: Text; href: string }[];
+   highlights: readonly Text[];
+   sections: readonly { heading: Text; blocks: readonly ContentBlock[] }[];
+ };
++export type ProjectEntry = {
++  slug: string;
++  name: Text;
++  client: string;
++  period?: Period;
++  role: Text;
++  stack: readonly string[];
++  summary: Text;
++  url?: string;
++  employer?: string;
++};
+diff --git a/web/content/validate.ts b/web/content/validate.ts
+index 28e78bc..b036c87 100644
+--- a/web/content/validate.ts
++++ b/web/content/validate.ts
+@@ -1,4 +1,4 @@
+-import { locales, type CaseStudy } from "@/content/types";
++import { locales, type CaseStudy, type ProjectEntry, type Text } from "@/content/types";
+ import { dateValue } from "@/lib/dates";
+ 
+ export function validateTranslations(value: unknown, path = "content"): string[] {
+@@ -26,18 +26,67 @@ export function validateCaseStudies(studies: readonly CaseStudy[]): string[] {
+     if (end !== null && start > end) errors.push("Rango invertido: " + study.slug);
+     if (study.stack.some((item) => !item.trim())) errors.push("Stack vacío: " + study.slug);
+     // Explicitly visit every visible text, including malformed empty translation objects.
+-    const texts = [study.title, study.roleLine, ...study.highlights, ...study.links.map((link) => link.label)];
++    const texts = [study.title, study.roleLine, study.summary, ...study.highlights, ...study.links.map((link) => link.label)];
++    const images = [study.cover, ...study.gallery];
++    if (!study.cover) errors.push("Cover ausente: " + study.slug);
++    if (!images.some(image => image?.variant === "desktop")) errors.push("Captura desktop ausente: " + study.slug);
++    for (const image of images) if (image) {
++      texts.push(image.alt);
++      if (!image.src.startsWith("/work/" + study.slug + "/") || image.src.includes("..")) errors.push("Ruta de imagen inválida: " + study.slug);
++      if (!Number.isInteger(image.width) || image.width <= 0 || !Number.isInteger(image.height) || image.height <= 0) errors.push("Dimensiones inválidas: " + image.src);
++    }
+     for (const section of study.sections) {
+       texts.push(section.heading);
+       for (const block of section.blocks) {
+         for (const item of block.type === "paragraph" ? [block] : block.items) {
+-          texts.push(item.text);
++          if (!item.segments.length) errors.push("Segmentos vacíos: " + study.slug);
++          for (const segment of item.segments) {
++            if (segment.type === "text") texts.push(segment.value);
++            else if (segment.type === "link") texts.push(segment.label);
++            else if (!segment.value.trim()) errors.push("Código vacío: " + study.slug);
++          }
+           if (item.lead !== undefined) texts.push(item.lead);
+         }
+       }
+     }
+-    for (const text of texts) {
+-      for (const locale of locales) if (typeof text?.[locale] !== "string" || !text[locale].trim()) errors.push("Texto vacío: " + study.slug + "/" + locale);
++    errors.push(...validateTexts(texts, study.slug));
++    if (!["live", "archived", "ongoing"].includes(study.status)) errors.push("Estado inválido: " + study.slug);
++    if (!Number.isInteger(study.order)) errors.push("Orden inválido: " + study.slug);
++  }
++  errors.push(...validateLinks(studies));
++  return errors;
++}
++
++function validateTexts(texts: readonly Text[], slug: string): string[] {
++  return texts.flatMap(text => locales.flatMap(locale => typeof text?.[locale] !== "string" || !text[locale].trim() ? ["Texto vacío: " + slug + "/" + locale] : []));
++}
++
++export function validateLinks(value: unknown): string[] {
++  if (Array.isArray(value)) return value.flatMap(validateLinks);
++  if (value === null || typeof value !== "object") return [];
++  return Object.entries(value).flatMap(([key, item]) => {
++    if (key !== "href" && key !== "url") return validateLinks(item);
++    try {
++      const url = new URL(String(item));
++      if (typeof item !== "string" || !["http:", "https:"].includes(url.protocol)) return ["URL inválida: " + String(item)];
++      return [];
++    } catch { return ["URL inválida: " + String(item)]; }
++  });
++}
++
++export function validateProjects(studies: readonly CaseStudy[], entries: readonly ProjectEntry[]): string[] {
++  const errors = [...validateCaseStudies(studies), ...validateTranslations(entries), ...validateLinks(entries)];
++  const slugs = new Set(studies.map(study => study.slug));
++  for (const entry of entries) {
++    if (slugs.has(entry.slug)) errors.push("Slug duplicado: " + entry.slug);
++    slugs.add(entry.slug);
++    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.slug)) errors.push("Slug inválido: " + entry.slug);
++    errors.push(...validateTexts([entry.name, entry.role, entry.summary], entry.slug));
++    if (entry.period) {
++      const start = dateValue(entry.period.start);
++      const end = entry.period.end == null ? null : dateValue(entry.period.end);
++      if (!Number.isFinite(start) || (end !== null && !Number.isFinite(end))) errors.push("Fecha inválida: " + entry.slug);
++      if (end !== null && start > end) errors.push("Rango invertido: " + entry.slug);
+     }
+   }
+   return errors;
+diff --git a/web/lib/routes.ts b/web/lib/routes.ts
+index 7bba7b2..bc53565 100644
+--- a/web/lib/routes.ts
++++ b/web/lib/routes.ts
+@@ -2,3 +2,4 @@ import { caseStudies } from "../content/case-studies.ts";
+ import { locales } from "../content/types.ts";
+ export const contentSuffixes = ["", "/work", ...caseStudies.map((study) => "/work/" + study.slug)];
+ export const contentPaths = locales.flatMap((locale) => contentSuffixes.map((suffix) => "/" + locale + suffix));
++export const workImagePaths = [...new Set(caseStudies.flatMap(study => [study.cover, ...study.gallery].map(image => image.src)))];
+diff --git a/web/proxy.test.ts b/web/proxy.test.ts
+index 41dadef..6ad351c 100644
+--- a/web/proxy.test.ts
++++ b/web/proxy.test.ts
+@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
+ import { NextRequest } from "next/server";
+ import { proxy, config } from "@/proxy";
+ import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
+-import { contentPaths } from "@/lib/routes";
++import { contentPaths, workImagePaths } from "@/lib/routes";
++import { projectEntries } from "@/content/projects";
+ import { dictionary as d } from "@/content/dictionary";
+ import { locales } from "@/content/types";
+ describe("proxy", () => {
+@@ -13,9 +14,12 @@ describe("proxy", () => {
+     expect(response.headers.get("vary")).toBe("Accept-Language");
+     expect(response.headers.get("cache-control")).toBe("private, no-store");
+   });
+-  it.each(contentPaths)("deja pasar %s", (path) => {
++  it.each([...contentPaths, ...workImagePaths])("deja pasar %s", (path) => {
+     expect(proxy(new NextRequest("http://localhost:3000" + path)).headers.get("x-middleware-next")).toBe("1");
+   });
++  it.each(projectEntries)("no crea detalle para $slug", entry => {
++    expect(proxy(new NextRequest("http://localhost:3000/es/work/" + entry.slug)).status).toBe(404);
++  });
+   it.each(locales)("404 estático en %s", async (locale) => {
+     const response = proxy(new NextRequest("http://localhost:3000/" + locale + "/work/missing"));
+     expect(response.status).toBe(404);
+diff --git a/web/proxy.ts b/web/proxy.ts
+index c908f4d..ca590be 100644
+--- a/web/proxy.ts
++++ b/web/proxy.ts
+@@ -1,9 +1,10 @@
+ import { NextResponse, type NextRequest } from "next/server";
+ import { preferredLocale, isLocale } from "@/lib/locale";
+-import { contentPaths } from "@/lib/routes";
++import { contentPaths, workImagePaths } from "@/lib/routes";
+ import { notFoundDocuments } from "@/lib/not-found-document";
+ export function proxy(request: NextRequest) {
+   const url = request.nextUrl.clone();
++  if (workImagePaths.includes(url.pathname)) return NextResponse.next();
+   if (url.pathname === "/") {
+     url.pathname = "/" + preferredLocale(request.headers.get("accept-language"));
+     const response = NextResponse.redirect(url, 307);
+diff --git a/web/scripts/verify-build.mjs b/web/scripts/verify-build.mjs
+index 22f8095..a1e1f90 100644
+--- a/web/scripts/verify-build.mjs
++++ b/web/scripts/verify-build.mjs
+@@ -1,6 +1,8 @@
+ import assert from "node:assert/strict";
+ import { readFile } from "node:fs/promises";
+-import { contentSuffixes, contentPaths } from "../lib/routes.ts";
++import { contentSuffixes, contentPaths, workImagePaths } from "../lib/routes.ts";
++import { caseStudies } from "../content/case-studies.ts";
++import { projectEntries } from "../content/projects.ts";
+ import { locales } from "../content/types.ts";
+ import { dictionary as d } from "../content/dictionary.ts";
+ 
+@@ -35,6 +37,10 @@ for (const locale of locales) {
+     if (suffix.startsWith("/work/")) {
+       assert.match(html, /<h2[ >]/); assert.match(html, /<ul[ >]/);
+       assert.match(html, /<strong[ >]/); assert.match(html, /<time /);
++      const study = caseStudies.find(study => suffix === "/work/" + study.slug);
++      for (const image of [study.cover, ...study.gallery]) {
++        assert.ok(tags(html, "img").some(tag => tag.alt === image.alt[locale] && Number(tag.width) === image.width && Number(tag.height) === image.height), "Rendered image: " + image.src);
++      }
+     }
+     console.log("STATIC + 200 + lang + canonical + hreflang + OG: " + path);
+   }
+@@ -47,6 +53,8 @@ for (const [language, target] of [["en-US", "/en"], ["es-AR", "/es"], ["es;q=0.2
+ }
+ for (const [path, locale] of [
+   ...locales.flatMap((locale) => [["/" + locale + "/missing/deep", locale], ["/" + locale + "/work/missing", locale], ["/" + locale + "/404", locale]]),
++  ...locales.flatMap(locale => projectEntries.map(entry => ["/" + locale + "/work/" + entry.slug, locale])),
++  ["/work/format/missing.png", "es"],
+   ["/fr", "es"], ["/missing/deep", "es"], ["/fonts/no-existe.woff2", "es"], ["/es/no-existe", "es"],
+ ]) {
+   const response = await fetch(base + path);
+@@ -64,4 +72,13 @@ for (const [path, type] of [["/favicon.ico", "image/"], ["/icon.svg", "image/svg
+   assert.ok((await response.arrayBuffer()).byteLength > 0, path);
+   console.log("200 + image + nonempty: " + path);
+ }
++for (const path of workImagePaths) {
++  for (const imagePath of [path, "/_next/image?url=" + encodeURIComponent(path) + "&w=640&q=75"]) {
++    const response = await fetch(base + imagePath);
++    assert.equal(response.status, 200, imagePath);
++    assert.ok(response.headers.get("content-type")?.startsWith("image/"), imagePath);
++    assert.ok((await response.arrayBuffer()).byteLength > 0, imagePath);
++  }
++  console.log("200 + original + next/image: " + path);
++}
+ console.log("Build verification passed.");
+diff --git a/web/vitest.config.ts b/web/vitest.config.ts
+index af43d54..198c706 100644
+--- a/web/vitest.config.ts
++++ b/web/vitest.config.ts
+@@ -2,5 +2,5 @@ import { fileURLToPath } from "node:url";
+ import { defineConfig } from "vitest/config";
+ export default defineConfig({
+   resolve: { alias: { "@": fileURLToPath(new URL(".", import.meta.url)) } },
+-  test: { environment: "node", include: ["**/*.test.ts"], exclude: ["node_modules/**", ".next/**"] },
++  test: { environment: "node", include: ["**/*.test.{ts,tsx}"], exclude: ["node_modules/**", ".next/**"] },
+ });
+diff --git a/web/components/case-study-list.tsx b/web/components/case-study-list.tsx
+new file mode 100644
+index 0000000..104adbb
+--- /dev/null
++++ b/web/components/case-study-list.tsx
+@@ -0,0 +1,15 @@
++import Link from "next/link";
++import { dictionary as d } from "@/content/dictionary";
++import type { CaseStudy, Locale } from "@/content/types";
++import { WorkImage } from "@/components/work-image";
++
++export function CaseStudyList({ studies, locale }: { studies: readonly CaseStudy[]; locale: Locale }) {
++  return <ul>{[...studies].sort((a, b) => a.order - b.order).map(study => <li key={study.slug}>
++    <article>
++      <h3><Link href={`/${locale}/work/${study.slug}`}>{study.title[locale]}</Link></h3>
++      <p>{d[study.status][locale]}</p>
++      <WorkImage image={study.cover} locale={locale} />
++      <p>{study.summary[locale]}</p>
++    </article>
++  </li>)}</ul>;
++}
+diff --git a/web/components/project-list.tsx b/web/components/project-list.tsx
+new file mode 100644
+index 0000000..1c126e9
+--- /dev/null
++++ b/web/components/project-list.tsx
+@@ -0,0 +1,17 @@
++import { dictionary as d } from "@/content/dictionary";
++import type { Locale, ProjectEntry } from "@/content/types";
++import { formatDate } from "@/lib/dates";
++
++export function ProjectList({ entries, locale }: { entries: readonly ProjectEntry[]; locale: Locale }) {
++  return <ul>{entries.map(entry => <li key={entry.slug}><article>
++    <h3>{entry.name[locale]}</h3>
++    <p>{d.client[locale]}: {entry.client}</p>
++    <p>{entry.role[locale]}</p>
++    {entry.period && <p><time dateTime={entry.period.start}>{formatDate(entry.period.start, locale)}</time>
++      {entry.period.end !== undefined && <>{d.periodSeparator[locale]}{entry.period.end === null ? d.present[locale] : <time dateTime={entry.period.end}>{formatDate(entry.period.end, locale)}</time>}</>}
++    </p>}
++    <p>{entry.summary[locale]}</p>
++    {entry.stack.length > 0 && <ul className="data" aria-label={d.stack[locale]}>{entry.stack.map(item => <li key={item}>{item}</li>)}</ul>}
++    {entry.url && <a href={entry.url}>{d.visitSite[locale]}</a>}
++  </article></li>)}</ul>;
++}
+diff --git a/web/components/rich-text.tsx b/web/components/rich-text.tsx
+new file mode 100644
+index 0000000..ae6829a
+--- /dev/null
++++ b/web/components/rich-text.tsx
+@@ -0,0 +1,14 @@
++import { formatting } from "@/content/dictionary";
++import type { Locale, RichText } from "@/content/types";
++
++export function TextContent({ item, locale }: { item: RichText; locale: Locale }) {
++  return <>{item.lead && <><strong>{item.lead[locale]}</strong>{formatting.leadSeparator[locale]}</>}
++    {item.segments.map((segment, index) => {
++      switch (segment.type) {
++        case "text": return <span key={index}>{segment.value[locale]}</span>;
++        case "code": return <code key={index}>{segment.value}</code>;
++        case "link": return <a key={index} href={segment.href}>{segment.label[locale]}</a>;
++      }
++    })}
++  </>;
++}
+diff --git a/web/components/work-image.tsx b/web/components/work-image.tsx
+new file mode 100644
+index 0000000..db94c2f
+--- /dev/null
++++ b/web/components/work-image.tsx
+@@ -0,0 +1,8 @@
++import Image from "next/image";
++import type { Locale, WorkImage as ImageContent } from "@/content/types";
++
++export function WorkImage({ image, locale }: { image: ImageContent; locale: Locale }) {
++  return <Image src={image.src} alt={image.alt[locale]} width={image.width} height={image.height}
++    className={image.variant === "mobile" ? "screenshot mobile" : "screenshot"}
++    sizes={image.variant === "mobile" ? "(max-width: 400px) 90vw, 360px" : "(max-width: 800px) 95vw, 800px"} />;
++}
+diff --git a/web/content/fixtures/legacy-case-hashes.json b/web/content/fixtures/legacy-case-hashes.json
+new file mode 100644
+index 0000000..6cade47
+--- /dev/null
++++ b/web/content/fixtures/legacy-case-hashes.json
+@@ -0,0 +1,14 @@
++{
++  "solution": {
++    "es": "ca878d55fabfd185431ad195e60e4234ebaf312e05b478600d8e196faa243031",
++    "en": "1d04c61b17e72741c97ef0048908d070b8dc4c3b700417af4bb713062ced4197"
++  },
++  "don-teofilo-amoblamientos": {
++    "es": "2c62c7070dc765f1f8e83511068b3a5f2ec5cc22573c5ba270381a5940bd34ea",
++    "en": "92e347889015915445e511a282288b30a36a17a6fa269edd140144f08818ff49"
++  },
++  "format": {
++    "es": "412d5347e87e4f8248d26139ffc847fd6629036c07f92b3b4f39c7a7c0997893",
++    "en": "b7e22a6fee7d2f456a75a52da781b72f8065f40daa99d5774cd05d4c5350befe"
++  }
++}
+diff --git a/web/content/images.test.ts b/web/content/images.test.ts
+new file mode 100644
+index 0000000..497c76d
+--- /dev/null
++++ b/web/content/images.test.ts
+@@ -0,0 +1,35 @@
++import { createRequire } from "node:module";
++import { readFile } from "node:fs/promises";
++import path from "node:path";
++import { describe, expect, it } from "vitest";
++import { caseStudies } from "@/content/case-studies";
++import { validateCaseStudies } from "@/content/validate";
++import type { WorkImage } from "@/content/types";
++
++// Read the actual PNG/WebP headers, independently of the declared content dimensions.
++const require = createRequire(import.meta.url);
++const { imageSize } = require("next/dist/compiled/image-size") as {
++  imageSize: (input: Buffer) => { width?: number; height?: number };
++};
++
++describe("capturas reales", () => {
++  for (const study of caseStudies) {
++    it(study.slug + " tiene cover y captura desktop", () => {
++      expect(study.cover).toBeDefined();
++      expect([study.cover, ...study.gallery].some(image => image.variant === "desktop")).toBe(true);
++    });
++    it.each([study.cover, ...study.gallery])("$src existe con dimensiones y alt ES/EN", async image => {
++      const bytes = await readFile(path.join(process.cwd(), "public", image.src));
++      const actual = imageSize(bytes);
++      expect({ width: image.width, height: image.height }).toEqual({ width: actual.width, height: actual.height });
++      expect(image.alt.es.trim()).not.toBe("");
++      expect(image.alt.en.trim()).not.toBe("");
++    });
++  }
++  it("rechaza cover, desktop o traducciones ausentes", () => {
++    const study = caseStudies[0];
++    expect(validateCaseStudies([{ ...study, cover: undefined as unknown as WorkImage }])).toContain("Cover ausente: " + study.slug);
++    expect(validateCaseStudies([{ ...study, cover: { ...study.cover, variant: "mobile" } }])).toContain("Captura desktop ausente: " + study.slug);
++    expect(validateCaseStudies([{ ...study, cover: { ...study.cover, alt: { es: "", en: "" } } }])).toContain("Texto vacío: " + study.slug + "/es");
++  });
++});
+diff --git a/web/content/literal-copy.test.tsx b/web/content/literal-copy.test.tsx
+new file mode 100644
+index 0000000..1da5aca
+--- /dev/null
++++ b/web/content/literal-copy.test.tsx
+@@ -0,0 +1,37 @@
++import { createHash } from "node:crypto";
++import { renderToStaticMarkup } from "react-dom/server";
++import { expect, it } from "vitest";
++import { caseStudies } from "@/content/case-studies";
++import { locales } from "@/content/types";
++import hashes from "@/content/fixtures/legacy-case-hashes.json";
++import { TextContent } from "@/components/rich-text";
++
++// Digests taken from the original source, before converting strings to inline segments.
++// They protect titles, metadata, highlights, headings, paragraphs, bullets and bold leads.
++it.each(caseStudies)("$slug conserva textos literales ES/EN del portfolio anterior", study => {
++  for (const locale of locales) {
++    const value = [study.title[locale], study.roleLine[locale], study.highlights.map(item => item[locale]), study.sections.map(section => [
++      section.heading[locale], section.blocks.map(block => {
++        const items = block.type === "paragraph" ? [block] : block.items;
++        const texts = items.map(item => item.segments.map(segment => segment.type === "code" ? segment.value : segment.type === "text" ? segment.value[locale] : segment.label[locale]).join(""));
++        return block.type === "paragraph" ? ["paragraph", texts[0]] : ["bullets", block.items.map((item, index) => [item.lead?.[locale] ?? null, texts[index]])];
++      }),
++    ])];
++    expect(createHash("sha256").update(JSON.stringify(value)).digest("hex")).toBe((hashes as Record<string, { es: string; en: string }>)[study.slug][locale]);
++  }
++});
++
++it("renderiza texto, código y enlaces con escape HTML y traducciones", () => {
++  const html = renderToStaticMarkup(<TextContent locale="en" item={{
++    lead: { es: "Ejemplo", en: "Example" },
++    segments: [
++      { type: "text", value: { es: "Ver ", en: "See " } },
++      { type: "code", value: "purchase_<orderId>" },
++      { type: "link", label: { es: "Documentación", en: "Documentation" }, href: "https://example.com/docs" },
++    ],
++  }} />);
++  expect(html).toContain("<strong>Example</strong>");
++  expect(html).toContain("<code>purchase_&lt;orderId&gt;</code>");
++  expect(html).toContain('<a href="https://example.com/docs">Documentation</a>');
++  expect(html).toContain("See ");
++});
+diff --git a/web/content/projects.ts b/web/content/projects.ts
+new file mode 100644
+index 0000000..fea452a
+--- /dev/null
++++ b/web/content/projects.ts
+@@ -0,0 +1,307 @@
++import type { ProjectEntry } from "./types";
++
++export const projectEntries: readonly ProjectEntry[] = [
++  {
++    "slug": "manantial",
++    "name": {
++      "es": "Manantial",
++      "en": "Manantial"
++    },
++    "client": "Manantial",
++    "role": {
++      "es": "Desarrollo completo WordPress",
++      "en": "Full WordPress development"
++    },
++    "stack": [
++      "WordPress",
++      "Gutenberg",
++      "ACF",
++      "PHP",
++      "JavaScript",
++      "Sass"
++    ],
++    "summary": {
++      "es": "Manantial tenía su contenido dentro del sitio de otra organización, sin una web propia. En Zetenta, desarrollé íntegramente su sitio de más de 45 páginas con WordPress, Gutenberg y ACF. Hoy el equipo edita todas las páginas sin tocar código.",
++      "en": "Manantial’s content lived on another organization’s website, without a site of its own. At Zetenta, I developed its entire website of more than 45 pages using WordPress, Gutenberg, and ACF. The team now edits every page without touching code."
++    },
++    "url": "https://www.manantialghumano.com.ar/",
++    "employer": "Zetenta"
++  },
++  {
++    "slug": "yacoub",
++    "name": {
++      "es": "Bajó de precio",
++      "en": "Price reductions"
++    },
++    "client": "Yacoub",
++    "role": {
++      "es": "Front-End + PHP",
++      "en": "Front-End + PHP"
++    },
++    "stack": [
++      "WordPress",
++      "PHP",
++      "JavaScript"
++    ],
++    "summary": {
++      "es": "Desarrollé un backend PHP para consumir una API externa basada en Excel y normalizar los datos antes de renderizarlos en el servidor.",
++      "en": "I developed a PHP backend to consume an external Excel-based API and normalize its data before server rendering."
++    },
++    "url": "https://yacoub.com.ar/bajo-de-precio/",
++    "employer": "Zetenta"
++  },
++  {
++    "slug": "madero-walk",
++    "name": {
++      "es": "Corporativos",
++      "en": "Corporate events"
++    },
++    "client": "Madero Walk",
++    "role": {
++      "es": "Front-End (Elementor)",
++      "en": "Front-End (Elementor)"
++    },
++    "stack": [
++      "WordPress",
++      "Elementor",
++      "HTML",
++      "CSS",
++      "JavaScript"
++    ],
++    "summary": {
++      "es": "Implementé landings por segmento en Elementor y componentes específicos con HTML, CSS y JavaScript.",
++      "en": "I implemented segment-specific Elementor landing pages and custom HTML, CSS, and JavaScript components."
++    },
++    "url": "https://maderowalk.com/corporativos-madero-walk/",
++    "employer": "Zetenta"
++  },
++  {
++    "slug": "exagon-impact",
++    "name": {
++      "es": "Exagon Impact",
++      "en": "Exagon Impact"
++    },
++    "client": "Exagon Impact",
++    "role": {
++      "es": "WordPress Developer",
++      "en": "WordPress Developer"
++    },
++    "stack": [
++      "WordPress",
++      "PHP",
++      "JavaScript",
++      "Sass"
++    ],
++    "summary": {
++      "es": "Creé la sección de portfolio, actualicé la home y desarrollé el bloque “Conocé al equipo”.",
++      "en": "I created the portfolio section, updated the homepage, and developed the “Meet the team” block."
++    },
++    "url": "https://exagonimpact.com/portfolio/",
++    "employer": "Zetenta"
++  },
++  {
++    "slug": "aeroclub",
++    "name": {
++      "es": "Aeroclub Capitán Sarmiento",
++      "en": "Aeroclub Capitán Sarmiento"
++    },
++    "client": "Aeroclub Capitán Sarmiento",
++    "role": {
++      "es": "Web Performance",
++      "en": "Web Performance"
++    },
++    "stack": [
++      "Performance",
++      "WordPress",
++      "CSS",
++      "Lazy loading"
++    ],
++    "summary": {
++      "es": "Audité la carga del sitio y trabajé sobre imágenes, lazy loading, CSS crítico y fuentes.",
++      "en": "I audited site loading and worked on images, lazy loading, critical CSS, and fonts."
++    },
++    "url": "https://aeroclubcapitansarmiento.com/",
++    "employer": "Zetenta"
++  },
++  {
++    "slug": "zetenta-site",
++    "name": {
++      "es": "Zetenta.com",
++      "en": "Zetenta.com"
++    },
++    "client": "Zetenta",
++    "role": {
++      "es": "Front-End Developer",
++      "en": "Front-End Developer"
++    },
++    "stack": [
++      "WordPress",
++      "PHP",
++      "JavaScript",
++      "Sass"
++    ],
++    "summary": {
++      "es": "Construí dos landings de servicios y contribuí al portfolio del sitio de Zetenta.",
++      "en": "I built two service landing pages and contributed to Zetenta’s portfolio."
++    },
++    "url": "https://www.zetenta.com/web/es/service/desarrollo-web-ecommerce/",
++    "employer": "Zetenta"
++  },
++  {
++    "slug": "go-building",
++    "name": {
++      "es": "Go Building",
++      "en": "Go Building"
++    },
++    "client": "Go Building",
++    "role": {
++      "es": "Front-End + integración CRM",
++      "en": "Front-End + CRM integration"
++    },
++    "stack": [
++      "WordPress",
++      "JavaScript",
++      "Kommo CRM",
++      "HTML",
++      "CSS"
++    ],
++    "summary": {
++      "es": "Desarrollé dos landings e integré sus formularios con Kommo CRM.",
++      "en": "I developed two landing pages and integrated their forms with Kommo CRM."
++    },
++    "url": "https://go-building.com/",
++    "employer": "Zetenta"
++  },
++  {
++    "slug": "espacio-boa",
++    "name": {
++      "es": "Espacio BOA",
++      "en": "Espacio BOA"
++    },
++    "client": "Espacio BOA",
++    "period": {
++      "start": "2025-09",
++      "end": "2025-11"
++    },
++    "role": {
++      "es": "Full-Stack Developer",
++      "en": "Full-Stack Developer"
++    },
++    "stack": [
++      "Next.js",
++      "TypeScript",
++      "Supabase",
++      "Tailwind",
++      "Resend"
++    ],
++    "summary": {
++      "es": "En BOA, las actividades del centro holístico se descubrían leyendo un calendario colgado en el café. Desarrollé una plataforma que reúne ambos espacios, publica la agenda y permite inscribirse con anticipación. Hoy funciona en producción y uno de los dueños administra las actividades desde el panel.",
++      "en": "At BOA, discovering the holistic center’s activities meant reading a calendar on the café wall. I built a platform that brings both spaces together, publishes the schedule, and supports advance registration. It’s now live, with one of the owners managing activities through the dashboard."
++    },
++    "url": "https://espacioboa.com/"
++  },
++  {
++    "slug": "renova-tu-cocina",
++    "name": {
++      "es": "Renová Tu Cocina",
++      "en": "Renová Tu Cocina"
++    },
++    "client": "Renová Tu Cocina",
++    "period": {
++      "start": "2026-03",
++      "end": "2026-03"
++    },
++    "role": {
++      "es": "Full-Stack Developer",
++      "en": "Full-Stack Developer"
++    },
++    "stack": [
++      "Next.js 15",
++      "Supabase",
++      "PostgreSQL",
++      "Server Actions",
++      "Vercel"
++    ],
++    "summary": {
++      "es": "Desarrollé en un mes el portfolio de obras y su panel de gestión con Next.js y Supabase. Los formularios preparan consultas por WhatsApp con el contexto del proyecto.",
++      "en": "I developed the project portfolio and management dashboard in one month using Next.js and Supabase. Forms prepare WhatsApp inquiries with project context."
++    },
++    "url": "https://www.renovatucocina.com.ar"
++  },
++  {
++    "slug": "mdvproyectos",
++    "name": {
++      "es": "MDVproyectos",
++      "en": "MDVproyectos"
++    },
++    "client": "MDVproyectos",
++    "period": {
++      "start": "2024-11",
++      "end": "2025-04"
++    },
++    "role": {
++      "es": "Desarrollador WordPress",
++      "en": "WordPress Developer"
++    },
++    "stack": [
++      "WordPress",
++      "SEO",
++      "Performance"
++    ],
++    "summary": {
++      "es": "Trabajé sobre el sitio WordPress existente y desarrollé landings para campañas. Organicé las mejoras en entregas cortas para revisar cada cambio dentro del sitio en uso.",
++      "en": "I worked on the existing WordPress site and developed campaign landing pages. I organized improvements into small deliveries to review each change within the running site."
++    },
++    "url": "https://mdvproyectos.com.ar/"
++  },
++  {
++    "slug": "fefe-bakes",
++    "name": {
++      "es": "Fefe Bakes",
++      "en": "Fefe Bakes"
++    },
++    "client": "Fefe Bakes",
++    "period": {
++      "start": "2024-10",
++      "end": "2024-12"
++    },
++    "role": {
++      "es": "Full-Stack Developer",
++      "en": "Full-Stack Developer"
++    },
++    "stack": [
++      "React",
++      "Redux",
++      "Node.js",
++      "Express",
++      "PostgreSQL",
++      "Sequelize"
++    ],
++    "summary": {
++      "es": "Desarrollé el frontend de la tienda con React y un backend Node.js/Express conectado a PostgreSQL. Separé interfaz y persistencia para mantener las responsabilidades de cada parte del sistema.",
++      "en": "I developed the store frontend with React and a Node.js/Express backend connected to PostgreSQL. I separated the interface from persistence to keep each part’s responsibilities distinct."
++    },
++    "url": "https://fefebakes.com/"
++  },
++  {
++    "slug": "kyriazis",
++    "name": {
++      "es": "Laura Kyriazis Law Group",
++      "en": "Laura Kyriazis Law Group"
++    },
++    "client": "Laura Kyriazis Law Group",
++    "period": {
++      "start": "2024-04"
++    },
++    "role": {
++      "es": "Desarrollo web",
++      "en": "Web development"
++    },
++    "stack": [],
++    "summary": {
++      "es": "Mi primer trabajo profesional fue un sitio para una abogada de planificación patrimonial en San Francisco. Tras la baja de la versión en Framer por falta de pago, lo reconstruí con desarrollo propio.",
++      "en": "My first professional project was a website for an estate planning attorney in San Francisco. After the Framer version went offline due to nonpayment, I rebuilt it with custom code."
++    },
++    "url": "https://kyriazislawyer.com/"
++  }
++];
+diff --git a/web/public/work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home-mobile.png b/web/public/work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home-mobile.png
+new file mode 100644
+index 0000000..0d12cb6
+Binary files /dev/null and b/web/public/work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home-mobile.png differ
+diff --git a/web/public/work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home.png b/web/public/work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home.png
+new file mode 100644
+index 0000000..1587ac1
+Binary files /dev/null and b/web/public/work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home.png differ
+diff --git a/web/public/work/format/format-home-hero-mobile.png b/web/public/work/format/format-home-hero-mobile.png
+new file mode 100644
+index 0000000..4775d21
+Binary files /dev/null and b/web/public/work/format/format-home-hero-mobile.png differ
+diff --git a/web/public/work/format/format-home-hero.png b/web/public/work/format/format-home-hero.png
+new file mode 100644
+index 0000000..15b4437
+Binary files /dev/null and b/web/public/work/format/format-home-hero.png differ
+diff --git a/web/public/work/solution/solution-home-mobile.webp b/web/public/work/solution/solution-home-mobile.webp
+new file mode 100644
+index 0000000..a43d438
+Binary files /dev/null and b/web/public/work/solution/solution-home-mobile.webp differ
+diff --git a/web/public/work/solution/solution-home.webp b/web/public/work/solution/solution-home.webp
+new file mode 100644
+index 0000000..f581428
+Binary files /dev/null and b/web/public/work/solution/solution-home.webp differ
+diff --git a/docs/content-migration.md b/docs/content-migration.md
+new file mode 100644
+index 0000000..4dab3e1
+--- /dev/null
++++ b/docs/content-migration.md
+@@ -0,0 +1,26 @@
++# Migración del contenido real
++
++Fuente: portfolio anterior, https://portfolio-adla.vercel.app/, leído desde la copia local `../Portfolio-Alejo/portfolio-dev` sin modificarla.
++Se leyeron `src/data/experiences.ts`, `src/data/caseStudies.ts` y `src/data/projectMedia.ts`.
++
++Los títulos, metadatos, highlights, secciones, párrafos, bullets y leads de Solution, Don Teófilo y FORMAT se copian literalmente en ES/EN. Los hashes en `web/content/fixtures/legacy-case-hashes.json` se obtuvieron del texto original antes de segmentarlo y se verifican en tests. `purchase_<orderId>` y `*` se renderizan como código conservando los caracteres originales.
++Los resúmenes de los case studies son las primeras dos oraciones literales del resumen original. Las entradas compactas conservan el resumen existente; los proyectos de Zetenta sin resumen usan la primera oración de su contribución. Manantial conserva el resumen de `caseStudies.ts`.
++Se usa el stack de cada experiencia para los case studies y el de cada proyecto para las entradas compactas. Se conservan los slugs anteriores o los IDs de proyecto de Zetenta.
++
++Las seis capturas se copiaron sin conversión desde `public/images/experiencia/`. Se midieron los archivos con Sharp y los tests verifican sus cabeceras independientemente de los datos declarados. El cover es la captura desktop y la galería adicional contiene la captura mobile; ambas forman el conjunto de capturas de cada caso.
++
++No se incorporan Job Match Bot ni VYZON.
++
++## Datos faltantes y diferencias de la fuente
++
++- No hay fechas individuales para Manantial, Bajó de precio (Yacoub), Corporativos (Madero Walk), Exagon Impact, Aeroclub Capitán Sarmiento, Zetenta.com ni Go Building. Se omite `period`: abril–octubre de 2025 corresponde al empleo en Zetenta y no se atribuye a cada proyecto.
++- Laura Kyriazis Law Group: stack vacío en el original; se conserva `[]`. Solo se conoce abril de 2024 como inicio. Se omite el final, porque `endDate: null` aparece acompañado por un período puntual («Primer trabajo profesional · abril de 2024»), sin evidencia de trabajo en curso ni de fecha de finalización de la reconstrucción.
++- Solution: el rango estructurado es febrero–septiembre de 2026, pero los textos indican producción abril–octubre y migración el 5 de octubre. Se conservan ambos datos tal cual, sin corregir fechas por inferencia.
++- La consigna dejó abierta la inclusión de `https://solution-topaz.vercel.app/`. Se omite por defecto mientras no haya una selección explícita. Su estado es `archived`.
++
++## Rutas y renderizado
++
++Se conserva Next.js 16.4.5, App Router, Server Components y la garantía estática existente. `next/image` recibe archivos locales con dimensiones explícitas y tamaños adaptables, sin introducir componentes cliente ni diseño visual.
++`lib/routes.ts` deriva los detalles solo de los case studies. El mismo inventario deriva `workImagePaths`; Proxy permite únicamente esas capturas exactas y deja que los archivos inexistentes reciban 404. Las entradas compactas nunca generan páginas propias.
++El texto enriquecido es una unión discriminada de texto traducido, código compartido y enlace con etiqueta traducida y destino único; no admite HTML libre ni Markdown.
++`Period.end` ausente significa desconocido; `null` significa en curso. Los case studies siempre especifican el final o `null`.
+diff --git a/docs/content-checks.txt b/docs/content-checks.txt
+new file mode 100644
+index 0000000..3c107d2
+--- /dev/null
++++ b/docs/content-checks.txt
+@@ -0,0 +1,71 @@
++Verificación de la carga de contenido — 2026-11-11
++
++$ pnpm lint
++$ pnpm --filter @portfolio/web lint
++$ eslint . --max-warnings=0
++Exit code: 0. Sin errores ni warnings de ESLint.
++
++$ pnpm test
++$ pnpm --filter @portfolio/web test
++$ vitest run
++
++ RUN  v5.1.0 C:/Users/cholo/Desktop/PortfolioAlejo/web
++
++ Test Files  6 passed | 1 skipped (7)
++      Tests  101 passed | 1 skipped (102)
++   Start at  12:35:36
++   Duration  2.62s (import 48%, transform 43%, tests 7%, worker 2%)
++Exit code: 0. El test omitido es el canario de notFound, desactivado por defecto.
++
++$ pnpm build
++$ pnpm --filter @portfolio/web build
++$ next build
++▲ Next.js 16.4.5 (Turbopack)
++✓ Running next.config.ts took 1625ms
++- Cache Components enabled
++- Experiments (use with caution):
++  ✓ globalNotFound
++
++  Creating an optimized production build ...
++✓ Compiled successfully in 11.0s
++  Running TypeScript ...
++  Finished TypeScript in 25.3s ...
++  Collecting page data using 8 workers ...
++  Generating static pages using 8 workers (0/17) ...
++  Generating static pages using 8 workers (4/17)
++  Generating static pages using 8 workers (8/17)
++  Generating static pages using 8 workers (12/17)
++✓ Generating static pages using 8 workers (17/17) in 3.8s
++  Finalizing page optimization ...
++
++Route (app)
++┌ ○ /_not-found
++├   /[locale]
++│ ├ ◐ /[locale]
++│ ├ ○ /es
++│ └ ○ /en
++├   /[locale]/work
++│ ├ ◐ /[locale]/work
++│ ├ ○ /es/work
++│ └ ○ /en/work
++├   /[locale]/work/[slug]
++│ ├ ◐ /[locale]/work/[slug]
++│ ├ ○ /es/work/solution
++│ ├ ○ /es/work/don-teofilo-amoblamientos
++│ └ ◐ [+4 more paths]
++└ ○ /icon.svg
++
++ƒ Proxy (Middleware)
++
++○  (Static)             prerendered as static content
++◐  (Partial Prerender)  prerendered as static HTML with dynamic server-streamed content
++Exit code: 0.
++
++$ pnpm verify:build
++Exit code: 0. Salida completa en content-verify-build.txt.
++Verificados compute: static y response: complete en las 10 URLs de contenido.
++
++Nota: el primer intento dentro del sandbox devolvió EPERM en Corepack.
++Se ejecutaron los comandos con el permiso existente para pnpm.cmd.
++Lint se repitió porque el primer proceso demoraba sin producir salida; ambos terminaron con exit code 0.
++git diff --check señala un espacio final preexistente en .gitignore:7; ese archivo no se modificó como parte de esta tarea.
+diff --git a/docs/content-verify-build.txt b/docs/content-verify-build.txt
+new file mode 100644
+index 0000000..3da2c03
+--- /dev/null
++++ b/docs/content-verify-build.txt
+@@ -0,0 +1,56 @@
++$ pnpm --filter @portfolio/web verify:build
++$ node --experimental-strip-types scripts/verify-build.mjs
++STATIC + 200 + lang + canonical + hreflang + OG: /es
++STATIC + 200 + lang + canonical + hreflang + OG: /es/work
++STATIC + 200 + lang + canonical + hreflang + OG: /es/work/solution
++STATIC + 200 + lang + canonical + hreflang + OG: /es/work/don-teofilo-amoblamientos
++STATIC + 200 + lang + canonical + hreflang + OG: /es/work/format
++STATIC + 200 + lang + canonical + hreflang + OG: /en
++STATIC + 200 + lang + canonical + hreflang + OG: /en/work
++STATIC + 200 + lang + canonical + hreflang + OG: /en/work/solution
++STATIC + 200 + lang + canonical + hreflang + OG: /en/work/don-teofilo-amoblamientos
++STATIC + 200 + lang + canonical + hreflang + OG: /en/work/format
++404 + lang + translation + noindex: /es/missing/deep
++404 + lang + translation + noindex: /es/work/missing
++404 + lang + translation + noindex: /es/404
++404 + lang + translation + noindex: /en/missing/deep
++404 + lang + translation + noindex: /en/work/missing
++404 + lang + translation + noindex: /en/404
++404 + lang + translation + noindex: /es/work/manantial
++404 + lang + translation + noindex: /es/work/yacoub
++404 + lang + translation + noindex: /es/work/madero-walk
++404 + lang + translation + noindex: /es/work/exagon-impact
++404 + lang + translation + noindex: /es/work/aeroclub
++404 + lang + translation + noindex: /es/work/zetenta-site
++404 + lang + translation + noindex: /es/work/go-building
++404 + lang + translation + noindex: /es/work/espacio-boa
++404 + lang + translation + noindex: /es/work/renova-tu-cocina
++404 + lang + translation + noindex: /es/work/mdvproyectos
++404 + lang + translation + noindex: /es/work/fefe-bakes
++404 + lang + translation + noindex: /es/work/kyriazis
++404 + lang + translation + noindex: /en/work/manantial
++404 + lang + translation + noindex: /en/work/yacoub
++404 + lang + translation + noindex: /en/work/madero-walk
++404 + lang + translation + noindex: /en/work/exagon-impact
++404 + lang + translation + noindex: /en/work/aeroclub
++404 + lang + translation + noindex: /en/work/zetenta-site
++404 + lang + translation + noindex: /en/work/go-building
++404 + lang + translation + noindex: /en/work/espacio-boa
++404 + lang + translation + noindex: /en/work/renova-tu-cocina
++404 + lang + translation + noindex: /en/work/mdvproyectos
++404 + lang + translation + noindex: /en/work/fefe-bakes
++404 + lang + translation + noindex: /en/work/kyriazis
++404 + lang + translation + noindex: /work/format/missing.png
++404 + lang + translation + noindex: /fr
++404 + lang + translation + noindex: /missing/deep
++404 + lang + translation + noindex: /fonts/no-existe.woff2
++404 + lang + translation + noindex: /es/no-existe
++200 + image + nonempty: /favicon.ico
++200 + image + nonempty: /icon.svg
++200 + original + next/image: /work/solution/solution-home.webp
++200 + original + next/image: /work/solution/solution-home-mobile.webp
++200 + original + next/image: /work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home.png
++200 + original + next/image: /work/don-teofilo-amoblamientos/donteofilo-amoblamientos-home-mobile.png
++200 + original + next/image: /work/format/format-home-hero.png
++200 + original + next/image: /work/format/format-home-hero-mobile.png
++Build verification passed.

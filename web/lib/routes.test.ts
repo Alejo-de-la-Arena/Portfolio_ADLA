@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { relative, sep } from "node:path";
 import { expect, it } from "vitest";
-import { contentPaths } from "./routes";
+import { contentPaths, previewPaths } from "./routes";
 
 it("every localized page is represented in the shared route allowlist", async () => {
   const root = fileURLToPath(new URL("../app/", import.meta.url));
@@ -16,6 +16,6 @@ it("every localized page is represented in the shared route allowlist", async ()
         : /^\[\.\.\..+\]$/.test(segment) ? ".+"
         : /^\[.+\]$/.test(segment) ? "[^/]+"
         : segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("/");
-    expect(contentPaths.some((path) => new RegExp("^" + pattern + "$").test(path)), segments.join("/") + "/page.tsx is missing from lib/routes.ts").toBe(true);
+    expect([...contentPaths, ...previewPaths].some((path) => new RegExp("^" + pattern + "$").test(path)), segments.join("/") + "/page.tsx is missing from lib/routes.ts").toBe(true);
   }
 });

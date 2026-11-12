@@ -1,0 +1,71 @@
+Verificación de la carga de contenido — 2026-11-11
+
+$ pnpm lint
+$ pnpm --filter @portfolio/web lint
+$ eslint . --max-warnings=0
+Exit code: 0. Sin errores ni warnings de ESLint.
+
+$ pnpm test
+$ pnpm --filter @portfolio/web test
+$ vitest run
+
+ RUN  v5.1.0 C:/Users/cholo/Desktop/PortfolioAlejo/web
+
+ Test Files  6 passed | 1 skipped (7)
+      Tests  101 passed | 1 skipped (102)
+   Start at  12:35:36
+   Duration  2.62s (import 48%, transform 43%, tests 7%, worker 2%)
+Exit code: 0. El test omitido es el canario de notFound, desactivado por defecto.
+
+$ pnpm build
+$ pnpm --filter @portfolio/web build
+$ next build
+▲ Next.js 16.4.5 (Turbopack)
+✓ Running next.config.ts took 1625ms
+- Cache Components enabled
+- Experiments (use with caution):
+  ✓ globalNotFound
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 11.0s
+  Running TypeScript ...
+  Finished TypeScript in 25.3s ...
+  Collecting page data using 8 workers ...
+  Generating static pages using 8 workers (0/17) ...
+  Generating static pages using 8 workers (4/17)
+  Generating static pages using 8 workers (8/17)
+  Generating static pages using 8 workers (12/17)
+✓ Generating static pages using 8 workers (17/17) in 3.8s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├   /[locale]
+│ ├ ◐ /[locale]
+│ ├ ○ /es
+│ └ ○ /en
+├   /[locale]/work
+│ ├ ◐ /[locale]/work
+│ ├ ○ /es/work
+│ └ ○ /en/work
+├   /[locale]/work/[slug]
+│ ├ ◐ /[locale]/work/[slug]
+│ ├ ○ /es/work/solution
+│ ├ ○ /es/work/don-teofilo-amoblamientos
+│ └ ◐ [+4 more paths]
+└ ○ /icon.svg
+
+ƒ Proxy (Middleware)
+
+○  (Static)             prerendered as static content
+◐  (Partial Prerender)  prerendered as static HTML with dynamic server-streamed content
+Exit code: 0.
+
+$ pnpm verify:build
+Exit code: 0. Salida completa en content-verify-build.txt.
+Verificados compute: static y response: complete en las 10 URLs de contenido.
+
+Nota: el primer intento dentro del sandbox devolvió EPERM en Corepack.
+Se ejecutaron los comandos con el permiso existente para pnpm.cmd.
+Lint se repitió porque el primer proceso demoraba sin producir salida; ambos terminaron con exit code 0.
+git diff --check señala un espacio final preexistente en .gitignore:7; ese archivo no se modificó como parte de esta tarea.
