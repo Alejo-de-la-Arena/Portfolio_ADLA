@@ -1,0 +1,64 @@
+/* Case poster (home). --field is the project's accent; text on it is always black, in both modes.
+   --overlap is how far the screenshot climbs into the field. */
+.poster { --overlap: clamp(4rem, 12vw, 10rem); }
+.poster + .poster { margin-top: clamp(4rem, 9vw, 8rem); }
+
+.field {
+  background: var(--field); color: #000000;
+  padding: 1.5rem var(--gutter) calc(var(--overlap) + 1.75rem);
+  display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: clamp(1rem, 3vw, 2.5rem); align-items: start;
+}
+.order {
+  grid-row: span 2; font-family: var(--font-bricolage); font-weight: 800; font-stretch: 75%; font-variation-settings: "opsz" 96;
+  font-size: clamp(4.5rem, 13vw, 12rem); line-height: 0.76; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+}
+.title {
+  margin: 0; max-width: 20ch; font-family: var(--font-bricolage); font-weight: 800; font-stretch: 80%; font-variation-settings: "opsz" 72;
+  font-size: clamp(1.75rem, 4.6vw, 4.5rem); line-height: 0.96; letter-spacing: -0.01em; text-wrap: balance;
+}
+.title a { color: #000000; text-decoration-line: none; }
+.title a:hover { text-decoration-line: underline; text-decoration-color: #000000; text-decoration-thickness: 3px; }
+/* The field is a flat accent: the orange focus ring would vanish on some of them, so focus goes black here. */
+.title a:focus-visible { outline-color: #000000; }
+.meta { margin: 1rem 0 0; display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; font: 500 0.9375rem/1.5 var(--font-jetbrains); }
+
+.body { display: grid; gap: 2rem; padding-inline: var(--gutter); margin-top: calc(-1 * var(--overlap)); }
+.media { position: relative; display: block; align-self: start; }
+.body[data-mobile] .media { margin-bottom: 2.5rem; margin-right: 0.75rem; }
+.desktop, .mobile { display: block; height: auto; border: 2px solid #000000; background: #000000; }
+.desktop { width: 100%; }
+.mobile {
+  position: absolute; right: -0.75rem; bottom: -2.5rem; width: 30%;
+  transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+/* The phone shot lifts off the desktop one: it says "this is a second view of the same system". */
+.media:hover .mobile { transform: translateY(-0.75rem); }
+@media (prefers-color-scheme: dark) { .desktop, .mobile { border-color: #FFFFFF; } }
+
+.aside, .lead { min-width: 0; display: grid; gap: 1.25rem; align-content: start; }
+.summary { margin: 0; max-width: 60ch; font-size: 1.1875rem; line-height: 1.55; text-wrap: pretty; }
+.stack {
+  list-style: none; margin: 0; padding: 0.75rem 0 0; border-top: 2px solid var(--ink);
+  display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; font: 500 0.9375rem/1.5 var(--font-jetbrains);
+}
+/* Thumbnail at its legibility floor: 22rem = 352px for the 360-unit viewBox keeps roles and step numbers
+   at >= 13 CSS px (docs/design-direction.md). It can't shrink further. */
+.diagram { max-width: 22rem; }
+.more { margin: 0; font-weight: 700; font-size: 1.1875rem; }
+.more a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+
+@media (min-width: 64rem) {
+  .body { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); grid-template-rows: auto 1fr; gap: 0 clamp(2.5rem, 4vw, 4rem); }
+  .body[data-mobile] .media { margin-right: 2rem; margin-bottom: 3rem; }
+  .mobile { right: -2rem; bottom: -3rem; width: 23%; }
+  /* The aside starts where the field ends, so its text never sits on the accent. */
+  .aside { grid-column: 2; grid-row: 1 / span 2; padding-top: calc(var(--overlap) + 1.5rem); }
+  /* Both columns end level whatever the width: the shorter side drops to the bottom of the grid area. */
+  .lead { grid-column: 1; margin-top: 1.5rem; align-self: end; }
+  .lead + .aside { align-self: end; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile { transition: none; }
+  .media:hover .mobile { transform: none; }
+}

@@ -108,3 +108,15 @@ B está en las rutas reales: /[locale], /[locale]/work y /[locale]/work/[slug] p
 - Descripción accesible: `describeDiagram` genera, a partir de los mismos datos, «paso n: de X a Y. …» en ES y EN. El SVG la referencia con aria-describedby, también en la miniatura.
 - La fecha de corte de las cifras es `metricsAsOf: "2026-09-14"` (ISODate, guardada una vez) y se formatea con formatDate. Un test verifica que el texto formateado aparezca en el case study.
 - Los case studies sin cifras ni diagrama (Don Teófilo, FORMAT) omiten esos bloques: pasan del campo de color directo a «En resumen».
+
+## Etapa 6: home (2026-11-13)
+
+- Nombre a todo el ancho: `font-size: calc(100cqi / 5.2)` dentro de un contenedor `inline-size`, sin JS. Medido en Chrome: 1354 de 1360 px a 1440 y 356 de 358 px a 390, sin scroll horizontal.
+- Debajo, una regla de 2 px y dos columnas en desktop: titular a la izquierda; disponibilidad y contacto a la derecha, alineados abajo.
+- Cada case study destacado es un cartel (`components/case-poster.tsx`): el campo del proyecto lleva el `order` enorme, el título y el período/estado en mono. La captura real de escritorio sube sobre el borde inferior del campo y la de mobile se superpone en una esquina. Sin diagrama, al costado van la bajada, el stack y el enlace al caso. Con diagrama, la columna derecha lleva solo la miniatura, en su piso de legibilidad (22rem = 352 px, roles ≥ 13 px), y la bajada, el stack y el enlace pasan debajo de la captura. Las dos columnas se alinean al fondo: medido en Chrome, terminan en el mismo píxel a 1024, 1280, 1440 y 1920.
+- Las capturas de la home van dentro de un enlace duplicado (`aria-hidden`, `tabIndex={-1}`, `alt=""`): el título es el enlace accesible y los alt completos siguen en el case study. Solo la primera se precarga (`preload`; `priority` está deprecado en Next 16).
+- Movimiento: ninguna animación de entrada. El diagrama sigue siendo lo que se mueve. Con hover, la captura mobile se levanta 0,75 rem; sin transición con `prefers-reduced-motion`.
+- Otros trabajos: pared tipográfica de nombres agrupada en «Por mi cuenta» / «En Zetenta», con enlace a /work. Las barras separadoras usan `content: " /" / ""` para que los lectores de pantalla no las lean.
+- Estado `live`: «En producción» / «Live» (antes «Publicado»), en la home y en el case study.
+- Contacto en mobile: 24 px entre «Copiar email» y los enlaces; email, botón, LinkedIn y GitHub miden 44 px de alto.
+- `/work` sigue usando `CaseIndex` sin cambios.

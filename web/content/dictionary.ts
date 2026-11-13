@@ -10,7 +10,7 @@ export const dictionary = {
   gallery: { es: "Capturas", en: "Screenshots" },
   client: { es: "Cliente", en: "Client" },
   visitSite: { es: "Visitar sitio", en: "Visit website" },
-  live: { es: "Publicado", en: "Live" },
+  live: { es: "En producción", en: "Live" },
   archived: { es: "Archivado", en: "Archived" },
   ongoing: { es: "En curso", en: "Ongoing" },
   placeholder: { es: "Portfolio en construcción. Proyectos destacados:", en: "Portfolio under construction. Featured work:" },
@@ -27,6 +27,10 @@ export const dictionary = {
   notFoundTitle: { es: "Página no encontrada", en: "Page not found" },
   notFoundDescription: { es: "La dirección solicitada no existe.", en: "The requested address does not exist." },
   backHome: { es: "Volver al inicio", en: "Back to home" },
+  readCase: { es: "Ver el caso completo", en: "Read the case study" },
+  allWork: { es: "Ver todos los proyectos", en: "See all work" },
+  independentWork: { es: "Por mi cuenta", en: "Independent" },
+  atEmployer: { es: "En {employer}", en: "At {employer}" },
 } satisfies Record<string, Text>;
 
 export const formatting = { leadSeparator: { es: " ", en: " " } } satisfies Record<string, Text>;

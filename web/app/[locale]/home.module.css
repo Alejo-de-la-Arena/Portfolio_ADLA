@@ -1,15 +1,24 @@
-.hero { padding: 1.5rem var(--gutter) 3.5rem; }
+.hero { padding: 1.25rem var(--gutter) 0; }
+
+/* The name fills the width: 100cqi is the hero's content width, 5.2 is the name's advance in em at
+   Bricolage 800 / width 75 (measured, with a small margin so it never overflows). */
+.nameFit { container-type: inline-size; }
 .name {
-  margin: 0; font-family: var(--font-bricolage); font-weight: 800; font-stretch: 75%; font-variation-settings: "opsz" 96;
-  font-size: clamp(3.75rem, 14.5vw, 14rem); line-height: 0.86; letter-spacing: -0.015em;
+  margin: 0; white-space: nowrap; font-family: var(--font-bricolage); font-weight: 800; font-stretch: 75%;
+  font-variation-settings: "opsz" 96; font-size: calc(100cqi / 5.2); line-height: 0.9; letter-spacing: -0.015em;
 }
-.headline { margin: 1.5rem 0 0; max-width: 34ch; font-size: clamp(1.375rem, 2.5vw, 2.125rem); line-height: 1.3; font-weight: 500; text-wrap: pretty; }
-.availability { margin: 1.25rem 0 0; font-weight: 600; max-width: 60ch; }
+
+.intro { display: grid; gap: 1.5rem; margin-top: clamp(1rem, 2vw, 1.75rem); padding-top: 1.5rem; border-top: 2px solid var(--ink); }
+.headline {
+  margin: 0; max-width: 30ch; font-size: clamp(1.375rem, 2.6vw, 2.375rem); line-height: 1.22; font-weight: 500;
+  letter-spacing: -0.005em; text-wrap: pretty;
+}
+.reach { display: grid; gap: 1rem; align-content: end; }
+.availability { margin: 0; font-weight: 600; max-width: 60ch; }
 
 /* Contact: inside the first screen on desktop and phones */
-.contact { margin-top: 1.5rem; }
-.contactList { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.75rem; }
-.emailItem { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.contactList { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.75rem; }
+.emailItem { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; flex-basis: 100%; }
 .email, .profileLink { font-size: 1.1875rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
 .copy {
   min-height: 2.75rem; padding: 0 0.875rem; border: 2px solid var(--ink); background: var(--bg); color: var(--ink);
@@ -17,10 +26,35 @@
 }
 .copy:hover { background: var(--ink); color: var(--bg); }
 .emailItem [data-copy-failed] { flex-basis: 100%; }
-.profileLink { display: inline-flex; align-items: center; min-height: 2.75rem; }
+.email, .profileLink { display: inline-flex; align-items: center; min-height: 2.75rem; }
+/* Phones: the copy button and the profile links stack, so give the rows real air (all targets stay 44px). */
 @media (max-width: 40rem) {
-  .contactList { gap: 0.25rem 1.5rem; }
-  .emailItem { flex-basis: 100%; }
+  .contactList { row-gap: 1.5rem; }
 }
 
-.indexTitle { margin: 3.5rem 0 0; font-size: var(--body-size); font-weight: 700; }
+@media (min-width: 64rem) {
+  .intro { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 4rem; }
+}
+
+.sectionTitle {
+  margin: 0 0 1rem; padding: 0 var(--gutter); font-size: var(--body-size); font-weight: 700;
+}
+.featured { margin-top: clamp(3.5rem, 7vw, 6rem); }
+
+/* Other work: the names as a typographic wall, grouped by who it was for. */
+.other { margin-top: clamp(5rem, 10vw, 9rem); }
+.other .sectionTitle { padding-bottom: 1rem; margin-inline: var(--gutter); padding-inline: 0; border-bottom: 2px solid var(--ink); }
+.group { padding: 1rem var(--gutter) 0; display: grid; gap: 0.5rem; }
+.groupLabel { margin: 0; font: 600 0.9375rem/1.5 var(--font-jetbrains); }
+.names {
+  list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0 0.5em;
+  font-family: var(--font-bricolage); font-weight: 700; font-stretch: 80%; font-variation-settings: "opsz" 72;
+  font-size: clamp(1.625rem, 4vw, 3.5rem); line-height: 1.08; letter-spacing: -0.01em;
+}
+.names li:not(:last-child)::after { content: " /" / ""; font-weight: 300; }
+.allWork { margin: 1.5rem var(--gutter) 0; font-weight: 700; font-size: 1.1875rem; }
+.allWork a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+
+@media (min-width: 64rem) {
+  .group { grid-template-columns: 12rem minmax(0, 1fr); column-gap: 2rem; align-items: baseline; }
+}
