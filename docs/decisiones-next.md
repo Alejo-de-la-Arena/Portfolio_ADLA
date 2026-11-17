@@ -135,3 +135,7 @@ Los previews /[locale]/preview/a y /preview/b se retiraron: sus rutas, estilos, 
 - CSS Modules por ruta (home.module.css, work.module.css, case.module.css) y globals.css con los tokens de B. El tema de cada proyecto es la variable `--field`, que se asigna inline por case study y por fila del índice.
 - next/font/local para Bricolage Grotesque desde web/assets/fonts (fuera de public/, servida en /_next/static/media; el matcher de Proxy no cambia). `declarations` declara el rango de font-stretch.
 - La navegación general (layout) agrega «Contacto», que apunta a /[locale]#contact, en la home.
+
+## Visuales de proyecto (2026-11-17)
+
+Sin decisiones nuevas de framework. Las páginas siguen como Server Components prerenderizados; `components/project-visual.tsx` es un Server Component que elige el visual por `kind`, y solo el elegido es Client Component (`elevation-plan.tsx`, `season-selector.tsx`), porque necesitan estado, temporizadores, IntersectionObserver, matchMedia y, el plano, ResizeObserver. El servidor renderiza el plano en una caja nominal de 352 × 264 con viewBox, así se ve completo sin JavaScript; el tamaño real llega antes del primer pintado. verify-build sigue exigiendo compute static y response complete.

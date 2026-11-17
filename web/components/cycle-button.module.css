@@ -1,0 +1,6 @@
+.button {
+  width: 2.75rem; height: 2.75rem; flex: none; display: grid; place-items: center; padding: 0;
+  border: 1px solid var(--ink); background: var(--bg); color: var(--ink); cursor: pointer;
+}
+.button svg { width: 1rem; height: 1rem; fill: currentColor; }
+.button:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }

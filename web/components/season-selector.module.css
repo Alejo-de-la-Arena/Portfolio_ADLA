@@ -1,0 +1,84 @@
+/* Season selector (FORMAT). The card is FORMAT's own surface, paper #C8D0D2 and ink #111111 from its
+   lib/color-contrast.ts, identical in both modes, like the case fields. Everything coloured inside
+   reads the Season's custom properties; registering them as <color> lets them transition, as the
+   client's globals.css does. The controls around the card follow the portfolio. */
+@property --accent-1 { syntax: "<color>"; inherits: true; initial-value: #111111; }
+@property --accent-2 { syntax: "<color>"; inherits: true; initial-value: #111111; }
+@property --on-accent-1 { syntax: "<color>"; inherits: true; initial-value: #C8D0D2; }
+@property --on-accent-2 { syntax: "<color>"; inherits: true; initial-value: #C8D0D2; }
+@property --line { syntax: "<color>"; inherits: true; initial-value: #111111; }
+
+.root { margin: 0; color: var(--ink); container-type: inline-size; }
+
+.card {
+  container-type: inline-size; position: relative; overflow: hidden; aspect-ratio: 4 / 5;
+  background: #C8D0D2; color: #111111; border: 2px solid #000000;
+  transition: --accent-1 600ms, --accent-2 600ms, --on-accent-1 600ms, --on-accent-2 600ms, --line 600ms;
+}
+@media (prefers-color-scheme: dark) { .card { border-color: #FFFFFF; } }
+.sheet { position: absolute; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; padding: 6cqi 6cqi 0; }
+.card p { margin: 0; }
+
+.top { display: flex; justify-content: space-between; font: 600 max(0.8125rem, 3.6cqi)/1.2 var(--font-jetbrains); letter-spacing: 0.04em; }
+
+.sticker { position: relative; justify-self: center; align-self: center; width: 58cqi; max-height: 100%; aspect-ratio: 1; color: var(--accent-1); }
+.sticker svg { display: block; width: 100%; height: 100%; }
+.logo { position: absolute; inset: 0; display: grid; place-items: center; }
+.logo > span {
+  background: #111111; color: #C8D0D2; padding: 1.2cqi 2.6cqi;
+  font: 800 max(0.75rem, 3.4cqi)/1 var(--font-hanken); text-transform: uppercase; letter-spacing: 0.08em;
+}
+.card[data-phase="enter"] .sticker { animation: arrive 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes arrive { from { opacity: 0; scale: 0.82; rotate: -24deg; } to { opacity: 1; scale: 1; rotate: 0deg; } }
+
+.name {
+  font-family: var(--font-bricolage); font-weight: 800; font-stretch: 75%; font-variation-settings: "opsz" 96;
+  font-size: 21cqi; line-height: 0.84; letter-spacing: -0.01em; padding-bottom: 3cqi; border-bottom: 3px solid var(--line);
+}
+.dates {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 2cqi;
+  padding-block: 3cqi; font: 500 max(0.8125rem, 3.6cqi)/1.3 var(--font-jetbrains);
+}
+.badge { background: var(--accent-2); color: var(--on-accent-2); padding: 0.8cqi 2cqi; font-weight: 700; }
+.band {
+  margin-inline: -6cqi !important; padding: 3.5cqi 6cqi; background: var(--accent-1); color: var(--on-accent-1);
+  font-family: var(--font-bricolage); font-weight: 800; font-stretch: 80%; font-size: max(1rem, 7cqi); line-height: 1; letter-spacing: 0.01em;
+}
+
+.legend { margin: 0; font-size: 0.9375rem; line-height: 1.5; }
+
+.choices { list-style: none; margin: 0; padding: 0; display: grid; }
+.choices button {
+  all: unset; box-sizing: border-box; width: 100%; min-height: 2.75rem; cursor: pointer; color: var(--ink);
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; border: 1px solid var(--ink);
+}
+.choices button[aria-pressed="true"] { background: var(--ink); color: var(--bg); font-weight: 700; }
+.choices button:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
+/* The swatch is the Season's main colour, edged so it holds on either page colour. */
+.swatch { width: 1.25rem; height: 1.25rem; flex: none; border: 2px solid currentColor; }
+.choiceName { font-family: var(--font-bricolage); font-weight: 800; font-size: 1.0625rem; letter-spacing: 0.02em; }
+.choiceMeta { margin-left: auto; font: 500 0.9375rem/1 var(--font-jetbrains); }
+
+/* Thumbnail (home): card, then pause and the Season buttons in a row, then the legend. */
+.caption { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
+.row { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); gap: 0.75rem; align-items: start; }
+.row .choices { grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 0.5rem; }
+
+/* Full (case study). */
+.layout { display: grid; gap: 1.5rem; }
+.canvas { min-width: 0; width: 100%; max-width: 26rem; margin-inline: auto; }
+.panel { display: grid; gap: 1rem; align-content: start; min-width: 0; }
+.controls { display: flex; align-items: center; gap: 0.75rem; }
+.status { margin: 0; font: 0.875rem/1.4 var(--font-jetbrains); }
+.panel .choices { gap: 0.5rem; max-width: 28rem; }
+
+@container (min-width: 60rem) {
+  .layout { grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); gap: 4rem; align-items: start; }
+  .canvas { margin-inline: 0; }
+  .panel { position: sticky; top: 1.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .card[data-phase] .sticker { animation: none; }
+}

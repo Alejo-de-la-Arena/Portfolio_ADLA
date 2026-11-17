@@ -41,9 +41,10 @@
   list-style: none; margin: 0; padding: 0.75rem 0 0; border-top: 2px solid var(--ink);
   display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; font: 500 0.9375rem/1.5 var(--font-jetbrains);
 }
-/* Thumbnail at its legibility floor: 22rem = 352px for the 360-unit viewBox keeps roles and step numbers
-   at >= 13 CSS px (docs/design-direction.md). It can't shrink further. */
-.diagram { max-width: 22rem; }
+/* Visual at 22rem. For the diagram it is the legibility floor: 352px for the 360-unit viewBox keeps
+   roles and step numbers at >= 13 CSS px (docs/design-direction.md). The plan draws in real pixels
+   and the Season card sizes its type in container units, so the same width serves all three. */
+.visual { max-width: 22rem; }
 .more { margin: 0; font-weight: 700; font-size: 1.1875rem; }
 .more a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 

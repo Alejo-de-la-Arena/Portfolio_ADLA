@@ -67,7 +67,7 @@ describe.each(caseVisuals)("visuales de $slug", (visuals: CaseVisuals) => {
   });
 });
 
-const diagrams = caseVisuals.filter(v => v.diagram).map(v => ({ slug: v.slug, diagram: v.diagram! as SystemDiagram, study: caseStudies.find(s => s.slug === v.slug)! }));
+const diagrams = caseVisuals.flatMap(v => v.visual?.kind === "system" ? [{ slug: v.slug, diagram: v.visual.diagram as SystemDiagram, study: caseStudies.find(s => s.slug === v.slug)! }] : []);
 
 describe.each(diagrams)("diagrama de $slug", ({ diagram, study }) => {
   const segs = diagram.edges.flatMap(edge => edge.points.slice(1).map((point, i) => ({ edge: edge.id, a: edge.points[i], b: point })));

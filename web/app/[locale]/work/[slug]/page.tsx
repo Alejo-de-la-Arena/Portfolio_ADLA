@@ -2,14 +2,14 @@ import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { caseStudies, findCaseStudy } from "@/content/case-studies";
-import { findCaseVisuals } from "@/content/case-visuals";
+import { findCaseVisuals, visualTitle } from "@/content/case-visuals";
 import { dictionary as d, visualUi as ui } from "@/content/dictionary";
 import { formatDate } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import { requireLocale } from "@/lib/routing";
 import { pairScreenshots } from "@/lib/screenshots";
 import { LanguageSelector } from "@/components/language-selector";
-import { SystemDiagram } from "@/components/system-diagram";
+import { ProjectVisual } from "@/components/project-visual";
 import { AnnotatedImage } from "@/components/annotated-image";
 import { CaseSections, MetricValue } from "@/components/case-parts";
 import s from "./case.module.css";
@@ -69,9 +69,9 @@ export default async function CaseStudyPage({ params }: PageProps<"/[locale]/wor
       </dl>
     </section>}
 
-    {visuals?.diagram && <section className={s.flow} aria-labelledby="flow-title">
-      <h2 id="flow-title" className="visually-hidden">{visuals.diagram.title[locale]}</h2>
-      <SystemDiagram diagram={visuals.diagram} locale={locale} listPlacement="beside" />
+    {visuals?.visual && <section className={s.flow} aria-labelledby="flow-title">
+      <h2 id="flow-title" className="visually-hidden">{visualTitle(visuals.visual)[locale]}</h2>
+      <ProjectVisual visual={visuals.visual} locale={locale} variant="full" />
     </section>}
 
     <div className={s.column}>

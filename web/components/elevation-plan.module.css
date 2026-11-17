@@ -1,0 +1,90 @@
+/* Elevation plan (Don Teófilo). Ink on the page, like the client's «tinta sobre papel». In dark mode the
+   dimensions take the project's field colour (#CF9A63, 8.46:1 on black); in light they stay ink,
+   because the oak on white is under 3:1. The title block is the field with black text in both modes.
+   Stroke weights are the client's (Alzado.module.css). */
+.root { margin: 0; color: var(--ink); container-type: inline-size; --dim: var(--ink); }
+@media (prefers-color-scheme: dark) { .root { --dim: var(--field); } }
+
+.box { position: relative; width: 100%; aspect-ratio: 4 / 3; }
+.svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+
+.contorno, .modulos, .detalles, .oculto, .cota, .mark, .ext {
+  fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round;
+}
+.contorno { stroke-width: 1.6; }
+.modulos { stroke-width: 1; }
+.detalles { stroke-width: 1.25; }
+/* Hidden or projected: dashed and lighter, as on a real plan. */
+.oculto { stroke-width: 1; stroke-dasharray: 4 3; }
+.cota { stroke: var(--dim); stroke-width: 1.25; stroke-linecap: butt; }
+.mark { stroke: var(--dim); stroke-width: 1; stroke-linecap: butt; }
+.ext { stroke: var(--dim); stroke-width: 0.75; }
+.label {
+  fill: var(--dim); font-family: var(--font-jetbrains); font-size: 13px; font-weight: 600;
+  text-anchor: middle; dominant-baseline: central; font-variant-numeric: tabular-nums;
+}
+
+/* Drawing sequence, the client's order and proportions at a slower pace for a portfolio:
+   outline → modules → details (+ hidden) → dimensions. Drawn groups use pathLength="1" and a dash
+   offset; dashed and small parts fade in instead, because the dash pattern is already in use. */
+.svg[data-phase="enter"] :is(.contorno, .modulos, .detalles, .cota) {
+  stroke-dasharray: 1 1; animation: draw var(--duration) var(--delay) cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+.svg[data-phase="enter"] :is(.oculto, .mark, .ext, .label) { animation: fade var(--duration) var(--delay) ease-out both; }
+.contorno { --delay: 0ms; --duration: 700ms; }
+.modulos { --delay: 400ms; --duration: 700ms; }
+.detalles { --delay: 850ms; --duration: 600ms; }
+.oculto { --delay: 900ms; --duration: 600ms; }
+.cota { --delay: 1150ms; --duration: 650ms; }
+.label { --delay: 1300ms; --duration: 500ms; }
+.mark, .ext { --delay: 1450ms; --duration: 400ms; }
+
+/* Erase: everything at once and fast, as on the client's site. */
+.svg[data-phase="exit"] :is(.contorno, .modulos, .detalles, .cota) { stroke-dasharray: 1 1; animation: erase 400ms cubic-bezier(0.4, 0, 1, 1) both; }
+.svg[data-phase="exit"] :is(.oculto, .mark, .ext, .label) { animation: fade 250ms reverse both; }
+
+@keyframes draw { from { stroke-dashoffset: 1; opacity: 0; } 6% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes erase { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 1; opacity: 0; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Title block: the field with black text, identical in both modes. */
+.titleBlock {
+  margin: 0; min-height: 2.75rem; padding: 0.375rem 0.75rem; display: flex; flex-wrap: wrap; align-items: baseline;
+  column-gap: 1rem; background: var(--field); color: #000000;
+}
+.blockName { font-family: var(--font-bricolage); font-weight: 700; font-size: 1.0625rem; line-height: 1.3; }
+.blockSize { font: 500 0.9375rem/1.3 var(--font-jetbrains); font-variant-numeric: tabular-nums; }
+.legend { margin: 0; font-size: 0.9375rem; line-height: 1.5; }
+
+/* Thumbnail (home): drawing, then pause + title block, then the legend. */
+.thumbCaption { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
+.thumbRow { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); gap: 0.75rem; align-items: stretch; }
+.thumbRow .titleBlock { align-content: center; }
+
+/* Full (case study): drawing and title block, with the panel below or beside. */
+.layout { display: grid; gap: 1.5rem; }
+.canvas { min-width: 0; display: grid; gap: 0.75rem; max-width: 36rem; width: 100%; margin-inline: auto; }
+.panel { display: grid; gap: 1rem; align-content: start; min-width: 0; }
+.controls { display: flex; align-items: center; gap: 0.75rem; }
+.status { margin: 0; font: 0.875rem/1.4 var(--font-jetbrains); font-variant-numeric: tabular-nums; }
+.choices { list-style: none; margin: 0; padding: 0; display: grid; border-top: 2px solid var(--ink); }
+.choices li { border-bottom: 1px solid var(--ink); }
+.choices button {
+  all: unset; box-sizing: border-box; width: 100%; min-height: 2.75rem; cursor: pointer; color: var(--ink);
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.25rem 1rem; padding: 0.75rem 0.25rem;
+}
+.choices button[aria-pressed="true"] { background: var(--field); color: #000000; padding-inline: 0.75rem; font-weight: 600; }
+.choices button:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
+.choiceName { font-size: var(--body-size); line-height: 1.4; }
+.choiceSize { font: 500 0.9375rem/1.4 var(--font-jetbrains); font-variant-numeric: tabular-nums; }
+
+@container (min-width: 60rem) {
+  .layout { grid-template-columns: minmax(0, 36rem) minmax(0, 1fr); gap: 4rem; align-items: start; }
+  .canvas { margin-inline: 0; }
+  .panel { position: sticky; top: 1.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg[data-phase] * { animation: none !important; stroke-dasharray: none; }
+  .svg[data-phase] .oculto { stroke-dasharray: 4 3; }
+}

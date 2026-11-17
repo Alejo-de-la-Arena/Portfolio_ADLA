@@ -1,4 +1,6 @@
 import { visualUi as ui } from "./dictionary";
+import { donTeofiloElevations, type ElevationSet } from "./elevations";
+import { formatSeasons, type SeasonSet } from "./seasons";
 import type { ISODate, Locale, Text } from "./types";
 
 /** A point in diagram user units. */
@@ -40,6 +42,22 @@ export type Annotation = {
   align: "start" | "center" | "end";
   label: Text;
 };
+/** The drawing each project leads with, built from that project's real logic:
+    system: Solution's architecture diagram; elevation: Don Teófilo's plans drawn from millimeters;
+    seasons: FORMAT's Season selector. */
+export type ProjectVisual =
+  | { kind: "system"; diagram: SystemDiagram }
+  | { kind: "elevation"; elevations: ElevationSet }
+  | { kind: "seasons"; seasons: SeasonSet };
+
+export function visualTitle(visual: ProjectVisual): Text {
+  switch (visual.kind) {
+    case "system": return visual.diagram.title;
+    case "elevation": return visual.elevations.title;
+    case "seasons": return visual.seasons.title;
+  }
+}
+
 export type CaseVisuals = {
   slug: string;
   /** Flat field colour of the project. Text on it is always black, so it must reach 4.5:1 against #000. */
@@ -48,7 +66,7 @@ export type CaseVisuals = {
   metricsAsOf?: ISODate;
   /** src of the mobile screenshot the home poster overlaps; without it, the case's first mobile capture. */
   posterMobile?: string;
-  diagram?: SystemDiagram;
+  visual?: ProjectVisual;
   metrics: readonly Metric[];
   annotations: Readonly<Record<string, readonly Annotation[]>>;
 };
@@ -67,7 +85,7 @@ export const caseVisuals: readonly CaseVisuals[] = [
     accent: "#35D3EA",
     metricsAsOf: "2026-09-14",
     posterMobile: "/work/solution/checkout-mobile.webp",
-    diagram: {
+    visual: { kind: "system", diagram: {
       title: t("Arquitectura de pagos, envíos y atribución de Solution", "Solution’s payments, shipping and attribution architecture"),
       viewBox: { w: 360, h: 568 },
       nodes: [
@@ -100,7 +118,7 @@ export const caseVisuals: readonly CaseVisuals[] = [
         { edge: "api-meta", at: 0.5, label: t("Conversions API desde el servidor, con datos hasheados.", "Conversions API from the server, with hashed data."), code: "purchase_<orderId>" },
         { edge: "browser-meta", at: 0.6, label: t("El pixel envía el mismo ID: Meta cuenta la venta una vez.", "The pixel sends the same ID: Meta counts the sale once."), code: "purchase_<orderId>" },
       ],
-    },
+    } },
     metrics: [
       { kind: "change", from: 80, to: 300, approximate: true, label: t("pedidos por mes", "orders a month") },
       { kind: "count", value: 1086, label: t("pedidos procesados", "orders processed"), asOf: true },
@@ -128,8 +146,8 @@ export const caseVisuals: readonly CaseVisuals[] = [
       ],
     },
   },
-  { slug: "don-teofilo-amoblamientos", accent: "#CF9A63", metrics: [], annotations: {} },
-  { slug: "format", accent: "#9777DA", metrics: [], annotations: {} },
+  { slug: "don-teofilo-amoblamientos", accent: "#CF9A63", visual: { kind: "elevation", elevations: donTeofiloElevations }, metrics: [], annotations: {} },
+  { slug: "format", accent: "#9777DA", visual: { kind: "seasons", seasons: formatSeasons }, metrics: [], annotations: {} },
 ];
 
 export function findCaseVisuals(slug: string) {

@@ -12,7 +12,7 @@ export function CaseIndex({ studies, locale, headingLevel = 3 }: { studies: read
   return <ol className={styles.index}>
     {[...studies].sort((a, b) => a.order - b.order).map((study) => {
       const visuals = findCaseVisuals(study.slug);
-      const drawing = visuals?.diagram;
+      const drawing = visuals?.visual?.kind === "system" ? visuals.visual.diagram : undefined;
       return <li key={study.slug} className={drawing ? styles.withDrawing : undefined}
         style={visuals ? { "--field": visuals.accent } as CSSProperties : undefined}>
         <span className={styles.order} aria-hidden="true">{study.order}</span>
