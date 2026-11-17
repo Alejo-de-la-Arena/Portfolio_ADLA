@@ -139,3 +139,13 @@ Los previews /[locale]/preview/a y /preview/b se retiraron: sus rutas, estilos, 
 ## Visuales de proyecto (2026-11-17)
 
 Sin decisiones nuevas de framework. Las páginas siguen como Server Components prerenderizados; `components/project-visual.tsx` es un Server Component que elige el visual por `kind`, y solo el elegido es Client Component (`elevation-plan.tsx`, `season-selector.tsx`), porque necesitan estado, temporizadores, IntersectionObserver, matchMedia y, el plano, ResizeObserver. El servidor renderiza el plano en una caja nominal de 352 × 264 con viewBox, así se ve completo sin JavaScript; el tamaño real llega antes del primer pintado. verify-build sigue exigiendo compute static y response complete.
+
+## 404 global en Vercel (2026-11-17)
+
+Comprobado en producción: las direcciones sin idioma válido (`/cualquier-cosa`, `/robots.txt`, `/fonts/no-existe.woff2`) respondían **200** con el documento de `global-not-found`. Las cabeceras lo explican: `X-Matched-Path: /_not-found` y `X-Nextjs-Prerender: 1`. Proxy reescribía a `/_not-found` y Vercel sirve ese prerender como una página más, con 200. `next start` sí lo responde con 404, por eso `verify:build` pasaba en local. Es el mismo límite ya anotado arriba (el status de una reescritura no convierte un 200 en 404), pero solo se ve en la plataforma.
+
+Decisión: Proxy deja de reescribir y responde él mismo con 404, igual que en las rutas con idioma. El documento global (`globalNotFoundDocument` en `lib/not-found-document.ts`) sale del mismo diccionario y la misma plantilla que los localizados: `lang` principal `es`, una sección `lang="es"` y otra `lang="en"`, `noindex` en meta y en `X-Robots-Tag`. Se construye una vez al cargar el módulo.
+
+Alternativas descartadas: depender de `global-not-found` (es justo lo que falla en Vercel) y un `rewrite` con status (Next no permite convertirlo así). `app/global-not-found.tsx` y `experimental.globalNotFound` quedan como frontera defensiva, como `app/[locale]/not-found.tsx`: con el matcher actual, Proxy atiende todas las direcciones salvo los archivos públicos existentes.
+
+`verify:build` corre contra una URL desplegada con `TEST_BASE_URL` (y `SITE_URL` igual al de ese deployment). En previews con Deployment Protection, el secreto de «Protection Bypass for Automation» se pasa como `VERCEL_AUTOMATION_BYPASS_SECRET` y viaja en la cabecera `x-vercel-protection-bypass`; no se guarda en el repo. El chequeo estático sigue leyendo `.next/prerender-manifest.json` local, así que antes de correrlo se compila el mismo commit.

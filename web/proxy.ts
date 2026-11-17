@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { preferredLocale, isLocale } from "@/lib/locale";
 import { contentPaths, workImagePaths } from "@/lib/routes";
-import { notFoundDocuments } from "@/lib/not-found-document";
+import { notFoundDocuments, globalNotFoundDocument } from "@/lib/not-found-document";
 export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
   if (workImagePaths.includes(url.pathname)) return NextResponse.next();
@@ -16,12 +16,15 @@ export function proxy(request: NextRequest) {
   if (isLocale(locale)) {
     if (contentPaths.includes(url.pathname)) return NextResponse.next();
     // Workaround vercel/next.js#100596: notFound() en segmentos dinámicos devuelve un body vacío (sin lang ni texto). Quitar cuando Next lo corrija; ver docs/decisiones-next.md.
-    return new NextResponse(notFoundDocuments[locale], {
-      status: 404, headers: { "Content-Type": "text/html; charset=utf-8", "X-Robots-Tag": "noindex" },
-    });
+    return notFound(notFoundDocuments[locale]);
   }
-  url.pathname = "/_not-found";
-  return NextResponse.rewrite(url);
+  // No reescribir a /_not-found: Vercel sirve ese prerender con 200 (next start da 404). Ver docs/decisiones-next.md.
+  return notFound(globalNotFoundDocument);
+}
+function notFound(html: string) {
+  return new NextResponse(html, {
+    status: 404, headers: { "Content-Type": "text/html; charset=utf-8", "X-Robots-Tag": "noindex" },
+  });
 }
 // Only existing public files bypass Proxy; never exclude all /fonts/ or file extensions.
 // robots.txt, sitemap.xml, íconos y opengraph-image necesitan su propia excepción cuando se agreguen.

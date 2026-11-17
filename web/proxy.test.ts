@@ -31,8 +31,18 @@ describe("proxy", () => {
     expect(html).toContain(d.notFoundTitle[locale]);
     expect(html).toContain("noindex");
   });
-  it.each(["/fr", "/missing/deep", "/fonts/no-existe.woff2", "/favicon-missing.ico"])("404 global de %s", (path) => {
-    expect(proxy(new NextRequest("http://localhost:3000" + path)).headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/_not-found");
+  it.each(["/fr", "/missing/deep", "/fonts/no-existe.woff2", "/favicon-missing.ico", "/robots.txt", "/_not-found"])("404 global de %s, sin reescribir", async (path) => {
+    const response = proxy(new NextRequest("http://localhost:3000" + path));
+    expect(response.status).toBe(404);
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(response.headers.get("x-robots-tag")).toBe("noindex");
+    const html = await response.text();
+    expect(html).toContain('<html lang="es"');
+    for (const locale of locales) {
+      expect(html).toContain('<section lang="' + locale + '">');
+      expect(html).toContain(d.notFoundTitle[locale]);
+      expect(html).toContain('href="/' + locale + '"');
+    }
   });
 });
 

@@ -9,6 +9,9 @@ import { dictionary as d } from "../content/dictionary.ts";
 const manifest = JSON.parse(await readFile(new URL("../.next/prerender-manifest.json", import.meta.url), "utf8"));
 const base = process.env.TEST_BASE_URL ?? "http://localhost:3000";
 const site = process.env.SITE_URL ?? "http://localhost:3000";
+// Previews de Vercel con Deployment Protection: el secreto de "Protection Bypass for Automation" va por entorno, nunca en el repo.
+const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+const get = (path, init = {}) => fetch(base + path, { ...init, headers: { ...(bypass ? { "x-vercel-protection-bypass": bypass } : {}), ...init.headers } });
 assert.equal(contentPaths.length, locales.length * contentSuffixes.length);
 const tags = (html, name) => [...html.matchAll(new RegExp("<" + name + "\\b[^>]*>", "g"))].map(([tag]) =>
   Object.fromEntries([...tag.matchAll(/([\w-]+)="([^"]*)"/g)].map(([, key, value]) => [key.toLowerCase(), value])));
@@ -19,7 +22,7 @@ for (const locale of locales) {
     assert.ok(contentPaths.includes(path));
     assert.ok(manifest.routes[path], "Missing static route: " + path);
     assert.equal(manifest.routes[path].compute, "static", "Dynamic compute: " + path); assert.equal(manifest.routes[path].response, "complete", "Incomplete prerender: " + path);
-    const response = await fetch(base + path);
+    const response = await get(path);
     assert.equal(response.status, 200, path);
     const html = await response.text();
     assert.equal(tags(html, "html")[0]?.lang, locale);
@@ -46,7 +49,7 @@ for (const locale of locales) {
   }
 }
 for (const [language, target] of [["en-US", "/en"], ["es-AR", "/es"], ["es;q=0.2,en;q=0.9", "/en"], ["fr", "/es"]]) {
-  const response = await fetch(base + "/?source=check", { headers: { "Accept-Language": language }, redirect: "manual" });
+  const response = await get("/?source=check", { headers: { "Accept-Language": language }, redirect: "manual" });
   assert.equal(response.status, 307);
   assert.equal(new URL(response.headers.get("location"), base).pathname, target);
   assert.equal(new URL(response.headers.get("location"), base).search, "?source=check");
@@ -57,7 +60,7 @@ for (const [path, locale] of [
   ["/work/format/missing.png", "es"],
   ["/fr", "es"], ["/missing/deep", "es"], ["/fonts/no-existe.woff2", "es"], ["/es/no-existe", "es"], ["/es/preview/b", "es"], ["/en/preview/a", "en"],
 ]) {
-  const response = await fetch(base + path);
+  const response = await get(path);
   assert.equal(response.status, 404, path);
   const html = await response.text();
   assert.equal(tags(html, "html")[0]?.lang, locale, path);
@@ -66,7 +69,7 @@ for (const [path, locale] of [
   console.log("404 + lang + translation + noindex: " + path);
 }
 for (const [path, type] of [["/favicon.ico", "image/"], ["/icon.svg", "image/svg+xml"]]) {
-  const response = await fetch(base + path);
+  const response = await get(path);
   assert.equal(response.status, 200, path);
   assert.ok(response.headers.get("content-type")?.startsWith(type), path);
   assert.ok((await response.arrayBuffer()).byteLength > 0, path);
@@ -74,7 +77,7 @@ for (const [path, type] of [["/favicon.ico", "image/"], ["/icon.svg", "image/svg
 }
 for (const path of workImagePaths) {
   for (const imagePath of [path, "/_next/image?url=" + encodeURIComponent(path) + "&w=640&q=75"]) {
-    const response = await fetch(base + imagePath);
+    const response = await get(imagePath);
     assert.equal(response.status, 200, imagePath);
     assert.ok(response.headers.get("content-type")?.startsWith("image/"), imagePath);
     assert.ok((await response.arrayBuffer()).byteLength > 0, imagePath);
