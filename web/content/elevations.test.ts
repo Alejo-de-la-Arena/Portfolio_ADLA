@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { donTeofiloElevations, moduleTypes, validateElevation, type Elevation, type ElevationModule } from "@/content/elevations";
-import { describeElevation, describeElevations } from "@/content/describe-visuals";
+import { describeElevation, describeElevations } from "@/content/describe-elevations";
 import { formatCount } from "@/content/case-visuals";
 import { LABEL_PAD, labelWidth, layoutElevation, trace, UnknownModuleError } from "@/lib/elevation-geometry";
 import { locales } from "@/content/types";

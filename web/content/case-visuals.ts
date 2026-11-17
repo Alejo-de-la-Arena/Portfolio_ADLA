@@ -1,7 +1,6 @@
-import { visualUi as ui } from "./dictionary";
 import { donTeofiloElevations, type ElevationSet } from "./elevations";
 import { formatSeasons, type SeasonSet } from "./seasons";
-import type { ISODate, Locale, Text } from "./types";
+import type { ISODate, Text } from "./types";
 
 /** A point in diagram user units. */
 export type Point = readonly [number, number];
@@ -71,9 +70,9 @@ export type CaseVisuals = {
   annotations: Readonly<Record<string, readonly Annotation[]>>;
 };
 
-/** Text sizes in diagram units. The drawing is never rendered below ~0.97 scale (352px wide for a
-    360-unit viewBox), so 13.5 units stays at or above 13 CSS px on a 390px phone. */
-export const diagramType = { name: 15, role: 13.5, badge: 13.5, badgeRadius: 13 } as const;
+// Pure helpers live apart so Client Components can import them without this data; re-exported here.
+export { diagramType, describeDiagram } from "./describe-diagram";
+export { formatCount } from "@/lib/format-count";
 
 const t = (es: string, en: string): Text => ({ es, en });
 
@@ -152,22 +151,4 @@ export const caseVisuals: readonly CaseVisuals[] = [
 
 export function findCaseVisuals(slug: string) {
   return caseVisuals.find((visuals) => visuals.slug === slug);
-}
-
-/** Grouping is forced so ES shows 1.086 like the case study text (Intl skips it for four digits in es). */
-export function formatCount(value: number, locale: Locale) {
-  return new Intl.NumberFormat(locale, { useGrouping: "always" }).format(value);
-}
-
-/** A stable text alternative for the drawing: every connection, who talks to whom, in order.
-    Generated from the same data the SVG draws, so the two cannot drift apart. */
-export function describeDiagram(diagram: SystemDiagram, locale: Locale): string {
-  const name = (id: string) => diagram.nodes.find((node) => node.id === id)?.name[locale] ?? id;
-  const steps = diagram.steps.map((step, index) => {
-    const edge = diagram.edges.find((item) => item.id === step.edge);
-    const from = edge ? name(edge.from) : "", to = edge ? name(edge.to) : "";
-    return ui.describeStep[locale].replace("{n}", String(index + 1)).replace("{from}", from).replace("{to}", to)
-      .replace("{label}", step.label[locale] + (step.code ? " " + step.code : ""));
-  });
-  return [ui.describeIntro[locale].replace("{title}", diagram.title[locale]).replace("{total}", String(diagram.steps.length)), ...steps].join(" ");
 }

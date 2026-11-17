@@ -1,21 +1,22 @@
 /* Season selector (FORMAT). The card is FORMAT's own surface, paper #C8D0D2 and ink #111111 from its
    lib/color-contrast.ts, identical in both modes, like the case fields. Everything coloured inside
-   reads the Season's custom properties; registering them as <color> lets them transition, as the
-   client's globals.css does. The controls around the card follow the portfolio. */
-@property --accent-1 { syntax: "<color>"; inherits: true; initial-value: #111111; }
-@property --accent-2 { syntax: "<color>"; inherits: true; initial-value: #111111; }
-@property --on-accent-1 { syntax: "<color>"; inherits: true; initial-value: #C8D0D2; }
-@property --on-accent-2 { syntax: "<color>"; inherits: true; initial-value: #C8D0D2; }
-@property --line { syntax: "<color>"; inherits: true; initial-value: #111111; }
+   reads the Season's custom properties. They are never transitioned: interpolating the band and its
+   text at once crosses 1:1 halfway. A change of Season fades a complete new card in over the old one.
+   The controls around the card follow the portfolio. */
 
 .root { margin: 0; color: var(--ink); container-type: inline-size; }
+
+/* Both cards share one grid cell: the leaving one stays opaque below until the new one is in. */
+.stage { display: grid; }
+.stage > .card { grid-area: 1 / 1; }
 
 .card {
   container-type: inline-size; position: relative; overflow: hidden; aspect-ratio: 4 / 5;
   background: #C8D0D2; color: #111111; border: 2px solid #000000;
-  transition: --accent-1 600ms, --accent-2 600ms, --on-accent-1 600ms, --on-accent-2 600ms, --line 600ms;
 }
 @media (prefers-color-scheme: dark) { .card { border-color: #FFFFFF; } }
+.entering { animation: card-in 600ms ease-out both; }
+@keyframes card-in { from { opacity: 0; } to { opacity: 1; } }
 .sheet { position: absolute; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; padding: 6cqi 6cqi 0; }
 .card p { margin: 0; }
 
@@ -82,7 +83,9 @@
   .panel { position: sticky; top: 1.5rem; }
 }
 
+/* Reduced motion: the new card replaces the old one at once. */
 @media (prefers-reduced-motion: reduce) {
-  .card { transition: none; }
+  .entering { animation: none; }
+  .leaving { display: none; }
   .card[data-phase] .sticker { animation: none; }
 }

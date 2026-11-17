@@ -23,11 +23,13 @@ export type Season = {
   fechaFin: ISODate;
   /** Every Friday of the Season; the first one is the opening (Experience). */
   fechas: readonly ISODate[];
-  /** The Season's welcome line, brand copy in English on the client's site in both languages. */
+  /** The Season's welcome line: the client's brand copy, quoted verbatim and never translated. Its
+      language is the set's introLang. */
   intro: string;
 };
 
-export type SeasonSet = { title: Text; items: readonly Season[] };
+/** introLang: language of every intro (BCP 47), rendered as its lang attribute in both site versions. */
+export type SeasonSet = { title: Text; introLang: "en"; items: readonly Season[] };
 
 export const seasonShapeName: Record<SeasonShape, Text> = {
   square: { es: "cuadrado", en: "square" },
@@ -40,6 +42,7 @@ export const seasonShapeName: Record<SeasonShape, Text> = {
 
 export const formatSeasons: SeasonSet = {
   title: { es: "Seasons de FORMAT", en: "FORMAT Seasons" },
+  introLang: "en",
   items: [
     {
       slug: "origin",

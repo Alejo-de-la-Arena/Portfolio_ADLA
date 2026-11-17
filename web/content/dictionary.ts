@@ -79,7 +79,8 @@ export const visualUi = {
   seasonNumber: { es: "Season {n}", en: "Season {n}" },
   fridays: { es: "{n} viernes", en: "{n} Fridays" },
   seasonsDescribeIntro: { es: "{title}. {total} Seasons reales; la misma tarjeta cambia de una a otra.", en: "{title}. {total} real Seasons; the same card switches between them." },
-  seasonsDescribeItem: { es: "{name}, Season {number}, del {start} al {end}, {fridays}: forma {shape}; {colors}; sobre el color principal, el texto va en {onAccent}.", en: "{name}, Season {number}, {start} to {end}, {fridays}: {shape} shape; {colors}; on the main color, text is set in {onAccent}." },
+  // {intro} is the Season's brand line, kept in English and marked with lang by describeSeasonParts.
+  seasonsDescribeItem: { es: "{name}, Season {number}, del {start} al {end}, {fridays}: forma {shape}; {colors}; en la banda, «{intro}»; sobre el color principal, el texto va en {onAccent}.", en: "{name}, Season {number}, {start} to {end}, {fridays}: {shape} shape; {colors}; on the band, “{intro}”; on the main color, text is set in {onAccent}." },
   seasonColorOne: { es: "color {list}", en: "color {list}" },
   seasonColorMany: { es: "colores {list}", en: "colors {list}" },
   ink: { es: "tinta", en: "ink" },

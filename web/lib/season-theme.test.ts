@@ -1,10 +1,15 @@
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { formatSeasons, seasonShapeName, type Season } from "@/content/seasons";
-import { describeSeasons } from "@/content/describe-visuals";
-import { contrastRatio, getSeasonColors, INK, MIN_SMALL_TEXT_CONTRAST, PAPER, readableOn, readableTextOn, seasonAccentVars, validateSeason } from "@/lib/season-theme";
+import { describeSeasonParts, describeSeasons } from "@/content/describe-seasons";
+import { contrastRatio, getSeasonColors, INK, MIN_GRAPHIC_CONTRAST, MIN_SMALL_TEXT_CONTRAST, PAPER, readableOn, readableTextOn, seasonAccentVars, SHAPE_OUTLINE, validateSeason } from "@/lib/season-theme";
 import { filledShapePath } from "@/lib/season-shape-path";
+import { dateValue } from "@/lib/dates";
 import { locales } from "@/content/types";
+import { SeasonSticker } from "@/components/season-sticker";
+import { SeasonSelector } from "@/components/season-selector";
 
 const [origin, ascent, pulse, jungle] = formatSeasons.items;
 
@@ -23,9 +28,14 @@ describe("Seasons de FORMAT", () => {
     ]);
   });
 
-  it("todas las fechas son viernes", () => {
+  it("todas las fechas son reales y son viernes", () => {
     for (const season of formatSeasons.items) {
-      for (const date of season.fechas) expect(new Date(`${date}T00:00:00Z`).getUTCDay()).toBe(5);
+      for (const date of season.fechas) {
+        // dateValue rejects dates that new Date() would roll over (2026-02-30 → March 2).
+        const value = dateValue(date);
+        expect(Number.isFinite(value), date).toBe(true);
+        expect(new Date(value).getUTCDay(), date).toBe(5);
+      }
     }
   });
 
@@ -47,9 +57,28 @@ describe.each(formatSeasons.items)("Season $nombre", (season: Season) => {
     }
   });
 
-  it("la línea de detalle se lee sobre el papel (3:1) o cae al principal", () => {
-    const vars = seasonAccentVars(season);
-    expect(vars["--line"] === season.colores[0] || contrastRatio(vars["--line"], PAPER) >= 3).toBe(true);
+  it("la línea de detalle llega a 3:1 sobre el papel", () => {
+    expect(contrastRatio(seasonAccentVars(season)["--line"], PAPER)).toBeGreaterThanOrEqual(MIN_GRAPHIC_CONTRAST);
+  });
+
+  it("la forma tiene en todo su borde un contorno que llega a 3:1 sobre el papel", () => {
+    expect(contrastRatio(SHAPE_OUTLINE, PAPER)).toBeGreaterThanOrEqual(MIN_GRAPHIC_CONTRAST);
+    const svg = renderToStaticMarkup(createElement(SeasonSticker, { forma: season.forma, rotate: 0 }));
+    const tags = [...svg.matchAll(/<(?:g|path|circle)\b[^>]*>/g)].map((m) => m[0]);
+    // Accent fills carry an ink stroke painted under the fill.
+    const fills = tags.filter((tag) => tag.includes('fill="currentColor"'));
+    for (const tag of fills) {
+      expect(tag).toContain(`stroke="${SHAPE_OUTLINE}"`);
+      expect(tag).toContain('paint-order="stroke"');
+    }
+    // Accent lines sit on the same geometry in ink, wider: right before them, with identical content.
+    const lines = [...svg.matchAll(/<g stroke="currentColor" stroke-width="([\d.]+)">(.*?)<\/g>/g)];
+    for (const [, width, inner] of lines) {
+      const contour = svg.match(new RegExp(`<g data-contour="" stroke="${SHAPE_OUTLINE}" stroke-width="([\\d.]+)">(.*?)</g><g stroke="currentColor" stroke-width="${width}">`));
+      expect(contour?.[2]).toBe(inner);
+      expect(Number(contour?.[1])).toBeGreaterThan(Number(width));
+    }
+    expect(fills.length + lines.length).toBeGreaterThan(0);
   });
 
   it("los demás puestos de la paleta repiten el principal", () => {
@@ -112,16 +141,54 @@ describe("lógica de contraste del sitio de FORMAT", () => {
   });
 });
 
-it.each(locales)("la descripción nombra cada Season, su forma, sus colores y el texto sobre el acento (%s)", locale => {
+describe("validación de fechas de una Season", () => {
+  const errors = (changes: Partial<Season>) => validateSeason({ ...pulse, ...changes });
+
+  it("rechaza fechas que no existen en el calendario", () => {
+    expect(errors({ fechas: ["2026-10-09", "2026-10-16", "2026-02-30", "2026-10-30"] })).toContain("pulse: fecha no válida 2026-02-30");
+    expect(errors({ fechaFin: "2026-10-32", fechas: ["2026-10-09", "2026-10-32"] })).toContain("pulse: fecha de fin no válida 2026-10-32");
+  });
+
+  it("rechaza fechas fuera del rango de la Season", () => {
+    expect(errors({ fechas: ["2026-10-09", "2026-11-06", "2026-10-30"] })).toContain("pulse: 2026-11-06 fuera del rango");
+  });
+
+  it("rechaza fechas fuera de orden o repetidas", () => {
+    expect(errors({ fechas: ["2026-10-09", "2026-10-23", "2026-10-16", "2026-10-30"] })).toContain("pulse: 2026-10-16 fuera de orden");
+    expect(errors({ fechas: ["2026-10-09", "2026-10-16", "2026-10-16", "2026-10-30"] })).toContain("pulse: 2026-10-16 fuera de orden");
+  });
+
+  it("rechaza un rango invertido", () => {
+    expect(errors({ fechaInicio: "2026-10-30", fechaFin: "2026-10-09", fechas: ["2026-10-30", "2026-10-09"] })).toContain("pulse: rango invertido");
+  });
+});
+
+describe("frases de marca (intro)", () => {
+  it.each(locales)("van sin traducir y con lang=\"en\" en la tarjeta y en la descripción (%s)", (locale) => {
+    expect(formatSeasons.introLang).toBe("en");
+    const html = renderToStaticMarkup(createElement(SeasonSelector, { set: formatSeasons, locale }));
+    // Server render shows the first Season on the card; every intro is in the description.
+    expect(html).toContain(`lang="en">${origin.intro}</p>`);
+    for (const season of formatSeasons.items) expect(html).toContain(`<span lang="en">${season.intro}</span>`);
+    const marked = describeSeasonParts(formatSeasons, locale).filter((part) => part.lang);
+    expect(marked).toEqual(formatSeasons.items.map((season) => ({ text: season.intro, lang: "en" })));
+  });
+});
+
+it.each(locales)("la descripción nombra cada Season, su forma, sus colores, su frase y el texto sobre el acento (%s)", locale => {
   const text = describeSeasons(formatSeasons, locale);
   expect(text).toContain(String(formatSeasons.items.length));
-  for (const season of formatSeasons.items) {
-    expect(text).toContain(season.nombre);
-    expect(text).toContain(seasonShapeName[season.forma][locale]);
-    for (const color of season.colores) expect(text).toContain(color);
-  }
+  expect(text).not.toContain("{");
+  // One item per Season, split where each one starts ("ORIGIN, Season 001"), not inside an intro.
+  const items = text.split(/(?=\b(?:ORIGIN|ASCENT|PULSE|JUNGLE), Season )/).slice(1);
+  expect(items).toHaveLength(formatSeasons.items.length);
+  formatSeasons.items.forEach((season, i) => {
+    expect(items[i].startsWith(season.nombre)).toBe(true);
+    expect(items[i]).toContain(seasonShapeName[season.forma][locale]);
+    expect(items[i]).toContain(season.intro);
+    for (const color of season.colores) expect(items[i]).toContain(color);
+  });
   // Origin and Ascent read in paper, Pulse and Jungle in ink, in that order.
   const onAccent = { es: ["papel", "tinta"], en: ["paper", "ink"] }[locale];
-  const items = text.split(/(?=ORIGIN|ASCENT|PULSE|JUNGLE)/).slice(1);
   expect(items.map((item) => item.trim().split(" ").at(-1)?.replace(/\.$/, ""))).toEqual([onAccent[0], onAccent[0], onAccent[1], onAccent[1]]);
 });

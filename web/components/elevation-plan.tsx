@@ -2,8 +2,9 @@
 
 import { useId, useRef } from "react";
 import { visualUi as ui } from "@/content/dictionary";
-import { formatCount } from "@/content/case-visuals";
-import { describeElevations, formatMm } from "@/content/describe-visuals";
+import { formatCount } from "@/lib/format-count";
+import { describeElevations } from "@/content/describe-elevations";
+import { formatMm } from "@/content/describe-visuals";
 import type { ElevationSet } from "@/content/elevations";
 import type { Locale } from "@/content/types";
 import { layoutElevation } from "@/lib/elevation-geometry";

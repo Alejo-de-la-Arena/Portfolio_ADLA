@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useReducer, useRef, useState } from "react";
 import { visualUi as ui } from "@/content/dictionary";
-import { describeDiagram, diagramType, type Point, type SystemDiagram as Diagram } from "@/content/case-visuals";
+import type { Point, SystemDiagram as Diagram } from "@/content/case-visuals";
+import { describeDiagram, diagramType } from "@/content/describe-diagram";
 import type { Locale } from "@/content/types";
 import { initialWalkthrough, walkthroughReducer } from "./walkthrough";
 import styles from "./system-diagram.module.css";
