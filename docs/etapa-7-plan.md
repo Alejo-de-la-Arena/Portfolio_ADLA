@@ -403,7 +403,7 @@ El «terminado cuando» de cada subetapa es el resumen; la lista completa de cas
 | DuckDNS, Caddy, Let's Encrypt | 0 |
 | SQLite, CI en GitHub Actions, monitoreo externo | 0 |
 | Plan B (si hace falta): free tier que escala a cero, dentro de sus cuotas | 0 |
-| Dominio propio | etapa 9 |
+| Dominio propio | más adelante (ver etapa 9) |
 | **Total objetivo** | **0, condicionado a cuotas** |
 
 ## Riesgos
