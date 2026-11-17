@@ -23,26 +23,57 @@ export const caseStudies: readonly CaseStudy[] = [
       "es": "Desarrollé la plataforma de e-commerce propia de Solution, que entró en producción a principios de abril de 2026. La marca pasó de unos 80 pedidos mensuales en Tienda Nube a unos 300, y al 14 de septiembre de 2026 la plataforma había procesado 1.086 pedidos de 1.006 compradores únicos.",
       "en": "I built Solution’s custom e-commerce platform, which went live in early April 2026. The brand went from around 80 monthly orders on Tienda Nube to around 300, and as of September 14, 2026, the platform had processed 1,086 orders from 1,006 unique buyers."
     },
+    // Screenshots in purchase order (product, checkout, payment); each mobile follows its desktop pair.
     "cover": {
-      "src": "/work/solution/solution-home.webp",
+      "src": "/work/solution/product-desktop.webp",
       "alt": {
-        "es": "Portada de Solution Perfumes en escritorio: presentación de fragancias y acceso al carrito.",
-        "en": "Solution Perfumes desktop homepage: fragrance introduction and cart access."
+        "es": "Ficha de producto de Black Code en escritorio: video del perfume con el indicador «En stock», momento, ocasión y salidas, y la descripción de la fragancia.",
+        "en": "Black Code product page on desktop: the perfume’s video with an “In stock” indicator, moment, occasion and outings, and the fragrance description."
       },
-      "width": 2532,
-      "height": 1266,
+      "width": 2518,
+      "height": 1214,
       "variant": "desktop"
     },
     "gallery": [
       {
-        "src": "/work/solution/solution-home-mobile.webp",
+        "src": "/work/solution/product-mobile.webp",
         "alt": {
-          "es": "Vista mobile de SOLUTION: interfaz del e-commerce adaptada a pantalla pequeña.",
-          "en": "SOLUTION mobile view: e-commerce interface adapted for small screens."
+          "es": "Ficha de producto de Black Code en mobile: video del perfume con el indicador «En stock» y miniaturas de la galería.",
+          "en": "Black Code product page on mobile: the perfume’s video with an “In stock” indicator and gallery thumbnails."
         },
-        "width": 850,
-        "height": 1100,
+        "width": 582,
+        "height": 1034,
         "variant": "mobile"
+      },
+      {
+        "src": "/work/solution/checkout-desktop.webp",
+        "alt": {
+          "es": "Checkout en escritorio: pasos numerados de contacto y dirección de envío; al costado, el pedido con dos perfumes, envío gratis, total de $89.998 y el aviso de envío a todo el país por Correo Argentino.",
+          "en": "Checkout on desktop: numbered contact and shipping address steps; beside them, the order with two perfumes, free shipping, a $89,998 total and a note on nationwide shipping via Correo Argentino."
+        },
+        "width": 2528,
+        "height": 1208,
+        "variant": "desktop"
+      },
+      {
+        "src": "/work/solution/checkout-mobile.webp",
+        "alt": {
+          "es": "Checkout en mobile: resumen del pedido plegado con el total de $89.998 y los pasos numerados de contacto y dirección de envío.",
+          "en": "Checkout on mobile: collapsed order summary with the $89,998 total, and the numbered contact and shipping address steps."
+        },
+        "width": 582,
+        "height": 1054,
+        "variant": "mobile"
+      },
+      {
+        "src": "/work/solution/payment-desktop.webp",
+        "alt": {
+          "es": "Paso 04 del checkout, Pago: Mercado Pago seleccionado, el aviso «Vas a continuar en Mercado Pago» con los medios aceptados y el botón «Pagar $89.998».",
+          "en": "Checkout step 04, Payment: Mercado Pago selected, the “Vas a continuar en Mercado Pago” (you’ll continue on Mercado Pago) notice with accepted methods, and the “Pagar $89.998” (Pay) button."
+        },
+        "width": 1456,
+        "height": 762,
+        "variant": "desktop"
       }
     ],
     "stack": [

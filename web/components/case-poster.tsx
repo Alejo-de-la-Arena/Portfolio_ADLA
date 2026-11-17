@@ -15,7 +15,7 @@ export function CasePoster({ study, locale, preload = false }: { study: CaseStud
   const visuals = findCaseVisuals(study.slug);
   const images = [study.cover, ...study.gallery];
   const desktop = images.find((image) => image.variant === "desktop");
-  const mobile = images.find((image) => image.variant === "mobile");
+  const mobile = images.find((image) => image.variant === "mobile" && (!visuals?.posterMobile || image.src === visuals.posterMobile));
   const href = `/${locale}/work/${study.slug}`;
   const titleId = `poster-${study.slug}`;
   const { start, end } = study.period;

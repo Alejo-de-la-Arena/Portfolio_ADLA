@@ -120,3 +120,10 @@ B está en las rutas reales: /[locale], /[locale]/work y /[locale]/work/[slug] p
 - Estado `live`: «En producción» / «Live» (antes «Publicado»), en la home y en el case study.
 - Contacto en mobile: 24 px entre «Copiar email» y los enlaces; email, botón, LinkedIn y GitHub miden 44 px de alto.
 - `/work` sigue usando `CaseIndex` sin cambios.
+
+## Capturas de Solution (2026-11-16)
+
+- Capturas nuevas en WebP (calidad 90), en orden de compra: producto, checkout y pago. El bloque del case study arma una fila por pantalla con la captura de escritorio y, al lado, su versión mobile si existe (`lib/screenshots.ts`). La portada anterior salió.
+- Pago es un recorte de la sección «04 Pago», desde el título hasta el botón «Pagar». El PNG original queda intacto. El cartel «No se pudo calcular el costo de envío» no aparece en ninguna captura.
+- Home: el cartel usa la ficha de producto y, superpuesto, el checkout mobile (`posterMobile` en `case-visuals.ts`).
+- Anotaciones: solo las que se conectan con una decisión del texto. Video desde Cloudflare R2 (producto, escritorio y mobile), Correo Argentino (checkout) y redirección a Checkout Pro con confirmación por webhook (pago). Las de stock en el servidor, checkout por pasos y envío gratis desde 2 unidades se descartaron porque el texto no las menciona. Los puntos se midieron en píxeles sobre la imagen fuente y se comprobaron en Chrome a 1440 y 390.

@@ -46,6 +46,8 @@ export type CaseVisuals = {
   accent: string;
   /** Date the snapshot figures were taken, stored once and formatted per locale. */
   metricsAsOf?: ISODate;
+  /** src of the mobile screenshot the home poster overlaps; without it, the case's first mobile capture. */
+  posterMobile?: string;
   diagram?: SystemDiagram;
   metrics: readonly Metric[];
   annotations: Readonly<Record<string, readonly Annotation[]>>;
@@ -64,6 +66,7 @@ export const caseVisuals: readonly CaseVisuals[] = [
     slug: "solution",
     accent: "#35D3EA",
     metricsAsOf: "2026-09-14",
+    posterMobile: "/work/solution/checkout-mobile.webp",
     diagram: {
       title: t("Arquitectura de pagos, envíos y atribución de Solution", "Solution’s payments, shipping and attribution architecture"),
       viewBox: { w: 360, h: 568 },
@@ -106,13 +109,22 @@ export const caseVisuals: readonly CaseVisuals[] = [
     // Each label names something visible in that exact image. Add new screenshots to the case study's
     // gallery (content/case-studies.ts) and their callouts here, keyed by the same src.
     annotations: {
-      "/work/solution/solution-home.webp": [
-        { x: 84.5, y: 2.4, row: 0, align: "end", label: t("Cuotas sin interés con Mercado Pago", "Interest-free installments with Mercado Pago") },
-        { x: 88.4, y: 9, row: 1, align: "end", label: t("Carrito con contador de productos", "Cart with item count") },
+      // Anchors measured on the source pixels: x/y = pixel / image size.
+      // Product video's play control (265, 1098 of 2518×1214): R2 decision.
+      "/work/solution/product-desktop.webp": [
+        { x: 10.5, y: 90.4, row: 0, align: "start", label: t("Video servido desde Cloudflare R2", "Video served from Cloudflare R2") },
       ],
-      "/work/solution/solution-home-mobile.webp": [
-        { x: 41.4, y: 4, row: 0, align: "center", label: t("Envío a todo el país", "Nationwide shipping") },
-        { x: 92.7, y: 12.4, row: 1, align: "end", label: t("Carrito con contador", "Cart with item count") },
+      // Play control (32, 730 of 582×1034).
+      "/work/solution/product-mobile.webp": [
+        { x: 5.5, y: 70.6, row: 0, align: "start", label: t("Video servido desde Cloudflare R2", "Video served from Cloudflare R2") },
+      ],
+      // Truck icon of «Envío a todo el país · Correo Argentino» (2035, 1158 of 2528×1208).
+      "/work/solution/checkout-desktop.webp": [
+        { x: 80.5, y: 95.9, row: 0, align: "end", label: t("Envíos con Correo Argentino", "Shipping via Correo Argentino") },
+      ],
+      // Icon of «Vas a continuar en Mercado Pago» (128, 412 of 1456×762): payment confirmed by the server, not the redirect.
+      "/work/solution/payment-desktop.webp": [
+        { x: 8.8, y: 54.1, row: 0, align: "start", label: t("Redirección a Checkout Pro: la compra se confirma por webhook, no por la vuelta", "Redirect to Checkout Pro: the purchase is confirmed by webhook, not by the return") },
       ],
     },
   },

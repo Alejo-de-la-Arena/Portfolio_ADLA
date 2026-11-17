@@ -48,6 +48,12 @@ describe.each(caseVisuals)("visuales de $slug", (visuals: CaseVisuals) => {
     if (visuals.metricsAsOf) expect(Number.isFinite(dateValue(visuals.metricsAsOf))).toBe(true);
   });
 
+  it("la captura mobile del cartel de la home es una captura mobile del case study", () => {
+    if (visuals.posterMobile) {
+      expect([study.cover, ...study.gallery].find(image => image.src === visuals.posterMobile)?.variant).toBe("mobile");
+    }
+  });
+
   it("las anotaciones apuntan a imágenes del case study y dentro de la captura, con texto ES/EN", () => {
     const sources = [study.cover, ...study.gallery].map(image => image.src);
     for (const [src, items] of Object.entries(visuals.annotations)) {

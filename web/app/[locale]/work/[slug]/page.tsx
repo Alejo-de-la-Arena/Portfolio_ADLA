@@ -7,6 +7,7 @@ import { dictionary as d, visualUi as ui } from "@/content/dictionary";
 import { formatDate } from "@/lib/dates";
 import { pageMetadata } from "@/lib/metadata";
 import { requireLocale } from "@/lib/routing";
+import { pairScreenshots } from "@/lib/screenshots";
 import { LanguageSelector } from "@/components/language-selector";
 import { SystemDiagram } from "@/components/system-diagram";
 import { AnnotatedImage } from "@/components/annotated-image";
@@ -34,10 +35,10 @@ export default async function CaseStudyPage({ params }: PageProps<"/[locale]/wor
   const metrics = visuals?.metrics ?? [];
   const [change, ...counts] = metrics;
   const asOf = visuals?.metricsAsOf ? ui.asOf[locale].replace("{date}", formatDate(visuals.metricsAsOf, locale)) : null;
-  // Every screenshot of the case study, in content order; callouts come from case-visuals.ts by src.
+  // Every screenshot of the case study, in content order, each desktop with its mobile pair beside it;
+  // callouts come from case-visuals.ts by src.
   const screenshots = [study.cover, ...study.gallery];
-  const wideShots = screenshots.filter((image) => image.variant === "desktop");
-  const phoneShots = screenshots.filter((image) => image.variant === "mobile");
+  const shotRows = pairScreenshots(screenshots);
   const annotations = (src: string) => visuals?.annotations[src] ?? [];
   // The case keeps its summary for cards (home, listing); here the numbers band does that job.
   const [firstSections, laterSections] = [study.sections.slice(0, 2), study.sections.slice(2)];
@@ -89,14 +90,12 @@ export default async function CaseStudyPage({ params }: PageProps<"/[locale]/wor
     {screenshots.length > 0 && <section className={s.screens} aria-labelledby="screens-title">
       <h2 id="screens-title" className={s.sectionHeading}>{d.gallery[locale]}</h2>
       <div className={s.screenGrid}>
-        {wideShots.length > 0 && <div className={s.wideShots}>
-          {wideShots.map((image) => <AnnotatedImage key={image.src} image={image} annotations={annotations(image.src)}
-            locale={locale} sizes="(max-width: 1100px) 94vw, 1000px" />)}
-        </div>}
-        {phoneShots.length > 0 && <div className={s.phoneShots}>
-          {phoneShots.map((image) => <AnnotatedImage key={image.src} image={image} annotations={annotations(image.src)}
-            locale={locale} sizes="(max-width: 900px) 92vw, 384px" />)}
-        </div>}
+        {shotRows.map(({ desktop, mobile }) => <div key={(desktop ?? mobile)?.src} className={s.shotRow}>
+          {desktop && <AnnotatedImage image={desktop} annotations={annotations(desktop.src)}
+            locale={locale} sizes={mobile ? "(max-width: 1024px) 94vw, 1000px" : "(max-width: 1440px) 94vw, 1360px"} />}
+          {mobile && <AnnotatedImage image={mobile} annotations={annotations(mobile.src)} className={s.phoneShot}
+            locale={locale} sizes="(max-width: 1024px) 92vw, 384px" />}
+        </div>)}
       </div>
     </section>}
 

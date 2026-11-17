@@ -29,7 +29,7 @@ describe("capturas reales", () => {
   it("rechaza cover, desktop o traducciones ausentes", () => {
     const study = caseStudies[0];
     expect(validateCaseStudies([{ ...study, cover: undefined as unknown as WorkImage }])).toContain("Cover ausente: " + study.slug);
-    expect(validateCaseStudies([{ ...study, cover: { ...study.cover, variant: "mobile" } }])).toContain("Captura desktop ausente: " + study.slug);
+    expect(validateCaseStudies([{ ...study, cover: { ...study.cover, variant: "mobile" }, gallery: study.gallery.filter(image => image.variant === "mobile") }])).toContain("Captura desktop ausente: " + study.slug);
     expect(validateCaseStudies([{ ...study, cover: { ...study.cover, alt: { es: "", en: "" } } }])).toContain("Texto vacío: " + study.slug + "/es");
   });
 });
