@@ -1,10 +1,15 @@
 import type { SeasonShape } from "@/content/seasons";
 import { PAPER } from "@/lib/season-theme";
+import { filledShapePath } from "@/lib/season-shape-path";
 
 /* The Season's shape as a sticker, ported from the client's site: components/ShapeSticker.tsx,
-   DoubleCircle.tsx, DoubleDiamond.tsx, JunglePlants.tsx and roundedDiamondPath in shapePaths.ts.
-   Both Seasons here are double-line shapes, which the original draws as an outline (not a filled
-   sticker) with the logo on an ink band. Drawn in currentColor, so the card's --accent-1 colours it. */
+   DoubleCircle.tsx, DoubleDiamond.tsx, JunglePlants.tsx and shapePaths.ts. Like the original, square
+   and triangle are solid stickers with the logo on the fill (here ink on a paper chip, for 4.5:1);
+   double-line shapes are an outline with the logo on an ink band.
+   Drawn in currentColor, so the card's --accent-1 colours it. */
+
+const isDoubleLine = (forma: SeasonShape): forma is "double-circle" | "double-diamond" =>
+  forma === "double-circle" || forma === "double-diamond";
 
 /** Diamond (square on its point) with rounded, neon-like corners. h = half diagonal, cut = how much
     each corner is trimmed along the sides. */
@@ -47,6 +52,9 @@ function PlantSprig({ variant }: { variant: number }) {
 }
 
 function Outline({ forma }: { forma: SeasonShape }) {
+  if (!isDoubleLine(forma)) {
+    return <svg viewBox="0 0 72 72" aria-hidden="true"><path d={filledShapePath(forma)} fill="currentColor" /></svg>;
+  }
   if (forma === "double-circle") {
     return <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" aria-hidden="true">
       <circle cx="50" cy="50" r="46" strokeWidth={3} />
@@ -60,13 +68,14 @@ function Outline({ forma }: { forma: SeasonShape }) {
   </svg>;
 }
 
-/** Sticker with the logo inside: for double-line shapes, paper text on an ink band, upright while the
-    shape rotates. */
+/** Sticker with the logo inside, upright while the shape rotates: on a paper chip over the fill for
+    solid shapes, paper text on an ink band for double-line ones. */
 export function SeasonSticker({ forma, rotate, className, logoClassName }: {
   forma: SeasonShape; rotate: number; className?: string; logoClassName?: string;
 }) {
   return <div className={className} style={{ transform: `rotate(${rotate}deg)` }} aria-hidden="true">
     <Outline forma={forma} />
-    <span className={logoClassName} style={{ transform: `rotate(${-rotate}deg)` }}><span>Format</span></span>
+    <span className={logoClassName} data-on={isDoubleLine(forma) ? "band" : "fill"}
+      style={{ transform: `rotate(${-rotate}deg)` }}><span>Format</span></span>
   </div>;
 }

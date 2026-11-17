@@ -60,7 +60,8 @@ export function describeSeasons(set: SeasonSet, locale: Locale): string {
       end: formatDate(season.fechaFin, locale),
       fridays: fill(ui.fridays[locale], { n: season.fechas.length }),
       shape: seasonShapeName[season.forma][locale],
-      colors: list([...season.colores], locale),
+      colors: fill((season.colores.length === 1 ? ui.seasonColorOne : ui.seasonColorMany)[locale],
+        { list: list([...season.colores], locale) }),
       onAccent: readableTextOn(season.colores[0]) === INK ? ui.ink[locale] : ui.paper[locale],
     }))].join(" ");
 }

@@ -10,6 +10,13 @@ export const INK = "#111111";
 /** Minimum contrast for lines and graphic elements (WCAG 1.4.11). */
 export const MIN_GRAPHIC_CONTRAST = 3;
 
+/** Minimum contrast for small text (WCAG 1.4.3). */
+export const MIN_SMALL_TEXT_CONTRAST = 4.5;
+
+/** Small text (the Fridays badge, the logo on a solid shape) is always ink on paper: no Season's main
+    colour reaches 4.5:1 with both, so only large text sits on the accent. */
+export const SMALL_TEXT = { color: INK, background: PAPER } as const;
+
 /** #RGB → #RRGGBB; alpha (#RRGGBBAA) is ignored. */
 function expand(hex: string): string {
   return /^#[0-9a-f]{3}$/i.test(hex) ? `#${[...hex.slice(1)].map((c) => c + c).join("")}` : hex;
@@ -59,6 +66,9 @@ export function seasonAccentVars(season: Season): Record<`--${string}`, string> 
     "--on-accent-1": readableTextOn(c1),
     "--on-accent-2": readableTextOn(c2),
     "--line": readableOn(PAPER, c4, c1),
+    // Small text: ink on paper in every Season.
+    "--small-text": SMALL_TEXT.color,
+    "--small-bg": SMALL_TEXT.background,
   };
 }
 
