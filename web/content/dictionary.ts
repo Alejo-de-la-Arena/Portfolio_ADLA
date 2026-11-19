@@ -31,6 +31,7 @@ export const dictionary = {
   allWork: { es: "Ver todos los proyectos", en: "See all work" },
   independentWork: { es: "Por mi cuenta", en: "Independent" },
   atEmployer: { es: "En {employer}", en: "At {employer}" },
+  ogImageAlt: { es: "Alejo de la Arena, desarrollador full-stack: nombre en letra grande sobre blanco y la presentación sobre un campo cian.", en: "Alejo de la Arena, full-stack developer: name in large type on white and the introduction on a cyan field." },
 } satisfies Record<string, Text>;
 
 export const formatting = { leadSeparator: { es: " ", en: " " } } satisfies Record<string, Text>;

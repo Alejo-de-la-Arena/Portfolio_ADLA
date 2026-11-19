@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { contentSuffixes, contentPaths, workImagePaths } from "../lib/routes.ts";
+import { contentSuffixes, contentPaths, workImagePaths, ogImagePath } from "../lib/routes.ts";
 import { caseStudies } from "../content/case-studies.ts";
 import { projectEntries } from "../content/projects.ts";
 import { locales } from "../content/types.ts";
@@ -36,6 +36,11 @@ for (const locale of locales) {
     for (const property of ["og:title", "og:description", "og:type", "og:url", "og:locale"]) {
       assert.ok(meta.some((tag) => tag.property === property && tag.content), "Missing " + property);
     }
+    const og = (property) => meta.filter((tag) => tag.property === property).map((tag) => tag.content);
+    assert.deepEqual(og("og:image"), [new URL(ogImagePath(locale), site).href], "og:image: " + path);
+    assert.deepEqual(og("og:image:alt"), [d.ogImageAlt[locale]], "og:image:alt: " + path);
+    assert.deepEqual(og("og:site_name"), ["Alejo de la Arena"], "og:site_name: " + path);
+    assert.ok(meta.some((tag) => tag.name === "twitter:card" && tag.content === "summary_large_image"), "twitter:card: " + path);
     assert.ok(tags(html, "a").some((a) => a["aria-current"] === "page" && a.hreflang === locale));
     if (suffix.startsWith("/work/")) {
       assert.match(html, /<h2[ >]/); assert.match(html, /<ul[ >]/);
@@ -67,6 +72,41 @@ for (const [path, locale] of [
   assert.ok(html.includes(d.notFoundTitle[locale]), "404 translation: " + path);
   assert.ok(tags(html, "meta").some((tag) => tag.name === "robots" && tag.content.includes("noindex")), path);
   console.log("404 + lang + translation + noindex: " + path);
+}
+{
+  const response = await get("/robots.txt");
+  assert.equal(response.status, 200, "/robots.txt");
+  assert.ok(response.headers.get("content-type")?.startsWith("text/plain"), "/robots.txt type");
+  const robots = await response.text();
+  assert.match(robots, /^User-Agent: \*$/m); assert.match(robots, /^Allow: \/$/m);
+  assert.ok(robots.includes("Sitemap: " + new URL("/sitemap.xml", site).href), "robots sitemap");
+  console.log("200 + text/plain + sitemap: /robots.txt");
+}
+{
+  const response = await get("/sitemap.xml");
+  assert.equal(response.status, 200, "/sitemap.xml");
+  assert.ok(response.headers.get("content-type")?.startsWith("application/xml"), "/sitemap.xml type");
+  const xml = await response.text();
+  const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => loc);
+  assert.deepEqual([...urls].sort(), contentPaths.map((path) => new URL(path, site).href).sort(), "sitemap locs");
+  for (const suffix of contentSuffixes) {
+    for (const language of [...locales, "x-default"]) {
+      const href = new URL("/" + (language === "x-default" ? "es" : language) + suffix, site).href;
+      assert.ok(xml.includes('hreflang="' + language + '" href="' + href + '"'), "sitemap hreflang " + language + ": " + suffix);
+    }
+  }
+  console.log("200 + xml + " + urls.length + " URLs + hreflang: /sitemap.xml");
+}
+for (const locale of locales) {
+  const path = ogImagePath(locale);
+  const response = await get(path);
+  assert.equal(response.status, 200, path);
+  assert.equal(response.headers.get("content-type"), "image/png", path);
+  const png = new Uint8Array(await response.arrayBuffer());
+  const view = new DataView(png.buffer);
+  assert.deepEqual([...png.slice(1, 4)], [80, 78, 71], "PNG signature: " + path);
+  assert.deepEqual([view.getUint32(16), view.getUint32(20)], [1200, 630], "PNG size: " + path);
+  console.log("200 + png + 1200x630: " + path);
 }
 for (const [path, type] of [["/favicon.ico", "image/"], ["/icon.svg", "image/svg+xml"]]) {
   const response = await get(path);

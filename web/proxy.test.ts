@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { proxy, config } from "@/proxy";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
-import { contentPaths, workImagePaths } from "@/lib/routes";
+import { contentPaths, ogImagePaths, workImagePaths } from "@/lib/routes";
 import { projectEntries } from "@/content/projects";
 import { dictionary as d } from "@/content/dictionary";
 import { locales } from "@/content/types";
@@ -14,11 +14,14 @@ describe("proxy", () => {
     expect(response.headers.get("vary")).toBe("Accept-Language");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
-  it.each([...contentPaths, ...workImagePaths])("deja pasar %s", (path) => {
+  it.each([...contentPaths, ...workImagePaths, ...ogImagePaths])("deja pasar %s", (path) => {
     expect(proxy(new NextRequest("http://localhost:3000" + path)).headers.get("x-middleware-next")).toBe("1");
   });
   it.each(["/es/preview/a", "/en/preview/b", "/es/preview"])("los previews retirados responden 404: %s", (path) => {
     expect(proxy(new NextRequest("http://localhost:3000" + path)).status).toBe(404);
+  });
+  it.each(locales)("otra imagen OG en %s responde 404", (locale) => {
+    expect(proxy(new NextRequest("http://localhost:3000/" + locale + "/opengraph-image/otra")).status).toBe(404);
   });
   it.each(projectEntries)("no crea detalle para $slug", entry => {
     expect(proxy(new NextRequest("http://localhost:3000/es/work/" + entry.slug)).status).toBe(404);
@@ -31,7 +34,7 @@ describe("proxy", () => {
     expect(html).toContain(d.notFoundTitle[locale]);
     expect(html).toContain("noindex");
   });
-  it.each(["/fr", "/missing/deep", "/fonts/no-existe.woff2", "/favicon-missing.ico", "/robots.txt", "/_not-found"])("404 global de %s, sin reescribir", async (path) => {
+  it.each(["/fr", "/missing/deep", "/fonts/no-existe.woff2", "/favicon-missing.ico", "/robots-missing.txt", "/sitemap.xml/extra", "/_not-found", "/opengraph-image", "/fr/opengraph-image/card"])("404 global de %s, sin reescribir", async (path) => {
     const response = proxy(new NextRequest("http://localhost:3000" + path));
     expect(response.status).toBe(404);
     expect(response.headers.get("x-middleware-rewrite")).toBeNull();
@@ -46,9 +49,9 @@ describe("proxy", () => {
   });
 });
 
-it.each(["/fonts/no-existe.woff2", "/favicon-missing.ico", "/es/no-existe", "/fr"])("matcher intercepts %s", (url) => {
+it.each(["/fonts/no-existe.woff2", "/favicon-missing.ico", "/es/no-existe", "/fr", "/robots.txt.bak", "/es/sitemap.xml", "/sitemap.xml/extra", "/_vercelx/insights", "/es/_vercel/insights/script.js"])("matcher intercepts %s", (url) => {
   expect(unstable_doesMiddlewareMatch({ config, nextConfig: {}, url })).toBe(true);
 });
-it.each(["/favicon.ico", "/icon.svg", "/fonts/hanken-grotesk-latin.woff2", "/fonts/jetbrains-mono-latin.woff2", "/error-document.css"])("matcher serves existing asset %s", (url) => {
+it.each(["/favicon.ico", "/icon.svg", "/fonts/hanken-grotesk-latin.woff2", "/fonts/jetbrains-mono-latin.woff2", "/error-document.css", "/robots.txt", "/sitemap.xml", "/_vercel/insights/script.js", "/_vercel/insights/view"])("matcher serves existing asset %s", (url) => {
   expect(unstable_doesMiddlewareMatch({ config, nextConfig: {}, url })).toBe(false);
 });

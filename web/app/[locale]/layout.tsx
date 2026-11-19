@@ -5,6 +5,7 @@ import { requireLocale } from "@/lib/routing";
 import { textFont, codeFont, displayFont } from "@/lib/fonts";
 import { metadataBase } from "@/lib/metadata";
 import { LocaleProvider } from "@/components/locale-context";
+import { VercelAnalytics } from "@/components/analytics";
 import "../globals.css";
 
 export const ensureStatic = "navigation";
@@ -22,5 +23,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
       </nav></header>
       <main>{children}</main>
     </LocaleProvider>
+    {/* Vercel Web Analytics, no cookies. See docs/decisiones-next.md. */}
+    <VercelAnalytics />
   </body></html>;
 }
